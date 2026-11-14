@@ -14,6 +14,7 @@ func check(condition: bool, label: String) -> void:
 
 func run() -> void:
 	game = load("res://scenes/main.tscn").instantiate()
+	game.set_meta("test_mode", true)
 	root.add_child(game)
 	game.set_physics_process(false)
 	game.start_run()

@@ -9,6 +9,8 @@ const DOCK_SPEED := 45.0
 const UNLOAD_SECONDS := 2.0
 const METERS_PER_WORLD_UNIT := 0.05
 const STARTER_ENGINE = preload("res://resources/engines/river_twin.tres")
+const UPGRADE_ENGINE = preload("res://resources/engines/river_triple.tres")
+const Profile = preload("res://scripts/player_profile.gd")
 
 var boat_pos := Vector2(640, 0)
 var velocity := Vector2.ZERO
@@ -36,6 +38,84 @@ var engine: Resource = STARTER_ENGINE
 var selected_gear := 1
 var gear_notice := ""
 var gear_notice_time := 0.0
+var profile: RefCounted
+var mission_id := 0
+var reward_received := false
+var depot_return_state := "ready"
+var depot_notice := ""
+var reset_profile_pending := false
+var pilot_branch := "safe"
+
+func apply_equipped_engine() -> void:
+	engine = UPGRADE_ENGINE if profile.equipped == "river_triple" else STARTER_ENGINE
+	if not engine.valid_data():
+		engine = STARTER_ENGINE
+	selected_gear = 1
+
+func open_depot() -> void:
+	if state not in ["ready", "success", "failure"]:
+		return
+	depot_return_state = state
+	state = "depot"
+	depot_notice = profile.load_notice
+	reset_profile_pending = false
+
+func close_depot() -> void:
+	if state == "depot":
+		state = depot_return_state
+	reset_profile_pending = false
+
+func buy_engine() -> void:
+	if state != "depot":
+		return
+	if profile.try_purchase("river_triple"):
+		depot_notice = "River Triple purchased. Equip it to use third gear next run."
+	else:
+		depot_notice = profile.load_notice if not profile.load_notice.is_empty() else "Need 100 support credits. Complete a delivery first."
+
+func equip_engine(id: String) -> void:
+	if state != "depot":
+		return
+	if profile.equip_engine(id):
+		apply_equipped_engine()
+		depot_notice = "%s equipped for the next run." % engine.display_name
+	else:
+		depot_notice = profile.load_notice if not profile.load_notice.is_empty() else "Purchase this engine before equipping it."
+
+func reset_progression() -> void:
+	if state != "depot":
+		return
+	if not reset_profile_pending:
+		reset_profile_pending = true
+		depot_notice = "Reset removes credits and engine ownership. Click Confirm reset to continue."
+		return
+	if profile.reset_profile():
+		apply_equipped_engine()
+		depot_notice = "Progress reset. River Twin is ready."
+		# Terminal delivery state cannot issue another reward after a reset.
+		mission_id = 0
+		reward_received = false
+	else:
+		depot_notice = profile.load_notice
+	reset_profile_pending = false
+
+func island_center(y: float) -> float:
+	return river_center(y) + 45.0
+
+func island_half_width(y: float) -> float:
+	var progress := -y
+	if progress <= 7600 or progress >= 11200:
+		return 0
+	return sin(PI * (progress - 7600) / 3600) * 95.0
+
+func current_at(pos: Vector2) -> Vector2:
+	var progress := -pos.y
+	var gentle := smoothstep(3500, 3900, progress) * (1.0 - smoothstep(5100, 5500, progress))
+	var fork := smoothstep(7600, 8100, progress) * (1.0 - smoothstep(10700, 11200, progress))
+	var branch := Vector2(0, 32)
+	if pos.x > island_center(pos.y):
+		branch = Vector2(sin(progress / 210) * 18, -55)
+	return Vector2(-12, 35) * gentle + branch * fork
 
 func speed_kmh() -> float:
 	return velocity.length() * METERS_PER_WORLD_UNIT * 3.6
@@ -63,6 +143,9 @@ func river_half_width(y: float) -> float:
 	return 285.0 + sin(-y / 1450.0) * 25.0
 
 func _ready() -> void:
+	profile = Profile.new("user://profile.json", not bool(get_meta("test_mode", false)))
+	profile.load_profile()
+	apply_equipped_engine()
 	setup_inputs()
 	build_route()
 	var view := View.new()
@@ -85,7 +168,7 @@ func setup_inputs() -> void:
 		"accelerate": [KEY_W, KEY_UP], "slow_down": [KEY_S, KEY_DOWN],
 		"brake": [KEY_SPACE], "deliver": [KEY_E], "restart": [KEY_R],
 		"start_run": [KEY_ENTER], "pause_run": [KEY_ESCAPE],
-		"toggle_fps": [KEY_QUOTELEFT]
+		"toggle_fps": [KEY_QUOTELEFT], "depot": [KEY_B]
 	}
 	for gear in range(1, 10):
 		bindings["gear_%d" % gear] = [KEY_0 + gear, KEY_KP_0 + gear]
@@ -105,6 +188,11 @@ func build_route() -> void:
 		rocks.append({"pos": Vector2(river_center(y) + side * (95.0 + sin(i * 2.1) * 60.0), y), "radius": 29.0 + fmod(i * 7.0, 19.0)})
 		if i % 4 == 0:
 			rocks.append({"pos": Vector2(river_center(y + 140) - side * 205.0, y + 140), "radius": 30.0})
+	# The island is the fork's only central obstruction. Safe channel is wide;
+	# rapids have visible rocks close to the outer bank, away from the clear line.
+	rocks = rocks.filter(func(rock: Dictionary) -> bool: return rock.pos.y > -7000 or rock.pos.y < -11800)
+	for y in [-8500.0, -9700.0, -10600.0]:
+		rocks.append({"pos": Vector2(river_center(y) + river_half_width(y) - 30, y), "radius": 28.0})
 	fuel_pickup = Vector2(river_center(-12400), -12400)
 	dock_pos = Vector2(river_center(-ROUTE_LENGTH) + river_half_width(-ROUTE_LENGTH) - 105, -ROUTE_LENGTH)
 
@@ -126,9 +214,22 @@ func reset_run() -> void:
 	selected_gear = 1
 	gear_notice = ""
 	gear_notice_time = 0
+	mission_id = 0
+	reward_received = false
+	apply_equipped_engine()
 
 func start_run() -> void:
+	if state != "ready":
+		return
+	var briefing_gear := selected_gear
+	apply_equipped_engine()
+	if engine.supports_gear(briefing_gear):
+		selected_gear = briefing_gear
+	mission_id = profile.begin_mission()
 	state = "running"
+	if mission_id == 0:
+		gear_notice = "Profile cannot be saved. Practice run: rewards disabled."
+		gear_notice_time = 6
 
 func _physics_process(delta: float) -> void:
 	gear_notice_time = maxf(0, gear_notice_time - delta)
@@ -137,13 +238,20 @@ func _physics_process(delta: float) -> void:
 			select_gear(gear)
 	if Input.is_action_just_pressed("toggle_fps"):
 		show_fps = not show_fps
+	if Input.is_action_just_pressed("depot"):
+		if state == "depot":
+			close_depot()
+		else:
+			open_depot()
 	if Input.is_action_just_pressed("restart"):
 		reset_run()
 		start_run()
 	if Input.is_action_just_pressed("start_run") and state == "ready":
 		start_run()
 	if Input.is_action_just_pressed("pause_run"):
-		if state == "running":
+		if state == "depot":
+			close_depot()
+		elif state == "running":
 			state = "paused"
 		elif state == "paused":
 			state = "running"
@@ -170,6 +278,9 @@ func simulate(delta: float, steering: Vector2, braking: bool, unloading: bool) -
 	var slowing := braking or steering.y > 0
 	if slowing:
 		target = Vector2.ZERO
+	var drive_target := target
+	# Current is incorporated once in target ground velocity, never in camera scroll.
+	target += current_at(boat_pos)
 	# W drives the selected gear; S and Space brake. Release W to coast to rest.
 	var acceleration: float = engine.acceleration_for(selected_gear)
 	velocity = velocity.move_toward(target, (390.0 if slowing else acceleration) * delta)
@@ -180,7 +291,7 @@ func simulate(delta: float, steering: Vector2, braking: bool, unloading: bool) -
 		velocity.y = 0.0
 	resolve_collisions()
 	camera_y = boat_pos.y - 520
-	fuel = maxf(0, fuel - delta * (0.55 + velocity.length() * 0.0008))
+	fuel = maxf(0, fuel - delta * (0.55 + drive_target.length() * 0.0008) * engine.fuel_multiplier)
 	if not pickup_taken and boat_pos.distance_to(fuel_pickup) < 53:
 		pickup_taken = true
 		fuel = minf(100, fuel + 38)
@@ -200,6 +311,7 @@ func simulate(delta: float, steering: Vector2, braking: bool, unloading: bool) -
 			delivered = true
 			state = "success"
 			velocity = Vector2.ZERO
+			reward_received = profile.award_delivery(mission_id)
 			play_tone(880, 0.45)
 	else:
 		unload_progress = 0
@@ -218,6 +330,18 @@ func resolve_collisions() -> void:
 			boat_pos.x += clampf(sample.x, center - limit, center + limit) - sample.x
 			take_impact(velocity.length())
 			velocity.x *= -0.35
+	# Sample the same island cross sections used by the renderer with hull support.
+	for endpoint: Vector2 in [axis, Vector2.ZERO, -axis]:
+		var sample := boat_pos + endpoint
+		var half := island_half_width(sample.y)
+		if half <= 0:
+			continue
+		var center := island_center(sample.y)
+		if absf(sample.x - center) < half + BOAT_RADIUS:
+			var side := -1.0 if sample.x < center else 1.0
+			boat_pos.x += center + side * (half + BOAT_RADIUS) - sample.x
+			take_impact(velocity.length())
+			velocity.x = side * 35
 	for rock: Dictionary in rocks:
 		var segment_start := boat_pos - axis
 		var nearest := Geometry2D.get_closest_point_to_segment(rock.pos, segment_start, boat_pos + axis)
@@ -269,6 +393,9 @@ func pilot_controls() -> Array:
 		if ahead > -90 and ahead < 350 and absf(target_x - rock.pos.x) < rock.radius + 75:
 			var side := signf(river_center(rock.pos.y) - rock.pos.x)
 			target_x = rock.pos.x + side * (rock.radius + 85)
+	if boat_pos.y < -7000 and boat_pos.y > -11600:
+		# Begin choosing a passage before the island reaches the bow.
+		target_x = river_center(boat_pos.y - 160) + (185.0 if pilot_branch == "rapids" else -155.0)
 	if not pickup_taken and absf(boat_pos.y - fuel_pickup.y) < 450:
 		target_x = fuel_pickup.x
 	if boat_pos.y < -ROUTE_LENGTH + 450:

@@ -1,8 +1,63 @@
 # Living River workbench
 
-## Current status — first step accepted; second step planned
+## Milestone 2 — complete, integrated review PASS
 
-The user accepted the first playable milestone as complete. [secondSteps.md](secondSteps.md) is the next plan: readable currents and rapids, one meaningful fork, then a small delivery-support / engine-purchase / replay loop. These systems are planned, not implemented in this update. [conceptEn.md](conceptEn.md) now separately records confirmed engine direction and optional community-information, cargo, partnership and environmental ideas.
+Implemented [secondSteps.md](secondSteps.md): readable currents, one safe/rapids fork, and a complete delivery-support / engine-purchase / replay loop. **Final independent integrated verdict: PASS**, with the performance and evidence qualifications below. The first milestone remains accepted. The user completed the requested second-milestone playtest and reported: “everithing is clear, bought 2nd boat and done new run. streams are clear with arrows”. This supports clear controls/current information and an actual purchase/replay. The current product sells an engine upgrade, not a second hull; no human completion time, branch choice or sustained-FPS measurement is inferred.
+
+### Implemented build
+
+- `scripts/main.gd`: one ground-velocity integration model with smooth bounded currents; a wide, opposing-current channel and narrower assisting rapids around a collidable island; still water at dock; explicit between-run depot integration and support rewards.
+- `scripts/river_view.gd`: exact shared island cross-sections, animated directional marks and rapid chevrons, cached original glyph textures, cached foliage and offscreen culling.
+- `scripts/boat_engine.gd`: validated finite, increasing speed curves, matching acceleration curves, reverse parameters, 1–8 forward gears, engine ID and fuel multiplier.
+- `resources/engines/river_triple.tres`: three forward gears (90/155/190), softer top-gear acceleration and 18% higher matched-input fuel consumption. Starter remains fully viable.
+- `scripts/player_profile.gd`: versioned local profile, atomic replacement/recovery, credits, ownership and equipped engine; mission IDs prevent repeat rewards. Transaction failures roll back and display notices. Invalid/missing data falls back to the starter profile.
+- `scripts/hud.gd`: depot opened with B between runs; actual Buy/Equip/Launch buttons; engine comparisons; two-click progression reset separate from R; support balance and delivery reward; flow and route-choice prompts.
+- R resets run state while preserving credits, ownership and equipment. Purchase/equip callbacks refuse changes during active play. Resetting progression clears the prior mission's ability to grant another reward.
+- Test scenes set `test_mode` before tree entry so simulation and graphical checks use isolated in-memory progression. Disk-persistence suites use isolated workspace files and exercise actual reloads, leaving the player's profile alone.
+
+### Measured complete scripted runs
+
+| Engine | Channel | Simulated time | Hull | Fuel left |
+|---|---|---:|---:|---:|
+| River Twin | Wide / safe | 178.02 s | 100 | 16.6 |
+| River Twin | Rapids | 167.57 s | 100 | 23.7 |
+| River Triple | Rapids, gear 3 | 137.58 s | 100 | 22.5 |
+
+Both starter branches finish with the same cargo and destination. The assisting rapids save 10.45 seconds and approximately 7.1 fuel but offer less lateral clearance and bank rocks; the wide channel avoids those hazards. The upgrade changes actual travel time; matched gear/throttle/time consumes 18% more fuel. Scripts establish viability, not human comfort or first-try completion.
+
+### Final checks and review rounds
+
+- `tests/river_checks.gd`: 24/24 PASS (flow direction, single integration, speedometer drift, freeze, smooth boundaries, delta comparison, island contacts, both starter routes, upgraded route, fuel trade-off).
+- `tests/profile_checks.gd`: 34/34 PASS, independently rerun, including corrupt saves, reload, duplicate rewards, insufficient funds, repeated purchase, invalid engines and transaction rollback.
+- `tests/profile_adversarial.gd`: 18/18 independent PASS; actual button callbacks, staged delivery repeated, mid-run guards, reset boundaries and measured engine differences.
+- `tests/river_adversarial.gd`: 30/30 independent PASS; invalid engine data, all stopped states, boundaries, step sizes, reverse escape, poor approaches, speed and restart.
+- Reviewer found a briefing regression: starting a run reset a preselected gear. Fixed by preserving valid briefing gear when applying the equipped engine. Updated old test-only engine injection to acquire/equip through the actual depot API. Starter gearbox suite passes 19/19 after the fix.
+- Initial integrated HUD import exposed one inferred-Variant type error. Added explicit String annotation and reran headless smoke; no script or resource errors remain. Tests that ran despite the failed HUD dependency were discarded as integrated-build evidence.
+- Refreshed prior suites: mission 20/20 PASS, original critic regressions 15/15 PASS, starter gearbox 19/19 PASS. Editor import and headless smoke complete without script/resource errors.
+- Physical-key graphical playback: 19/19 PASS, including briefing-selected gear, unavailable 3, native Escape pause, reverse, first-gear docking, terminal outcomes and restart.
+- Full graphical sequence: 11/11 PASS, three complete accelerated routes and real mouse Buy/Equip/Launch interactions. No route teleports within these runs. Report: [milestone2_graphical.md](evidence/milestone2_graphical.md).
+- Normal-speed staged motion: 1/1 recovery check PASS, 360 frames at 30 fps / 12 seconds. Includes opposing flow, assisting rapids, reverse wake, braking and unloading. [Motion report](evidence/milestone2_motion.md), [recording](evidence/milestone2_motion.avi). Later example positions are explicitly staged; this is not a full route. The integration critic independently reran graphical recovery and inspected actual current/dock frames.
+- Unique asserted checks across the retained suites: 191 passed. This count excludes repeated independent reruns and benchmarks.
+- Scope reviews: [profile-independent-review.md](evidence/profile-independent-review.md) PASS for economy/profile plus recorded graphical UI/replay; [river-independent-review.md](evidence/river-independent-review.md) PASS for gear/current/fork gates after refreshed physical inputs and user feedback.
+- Final fresh integration review: [milestone2-integration-review.md](evidence/milestone2-integration-review.md), **PASS with documented variable fork performance**. The critic inspected actual code/pixels and independently reran river/profile adversarial and core tests plus normal-speed graphical recovery. No integrated gameplay defect remains evidenced.
+
+### Performance investigation
+
+Pre-change local cached benchmark: root 61.6 FPS / 608.7 mean draw calls; visual builder 61.0 FPS / 608.8. Initial per-frame arrow primitives produced variable fork regressions above the plan's 10% investigation threshold. Investigated and replaced them with two cached original glyph textures. Paired post-cache builder samples were current 55.7 FPS / 612.8 draws versus preceding renderer 45.4 FPS / 592.6, and current 45.6 FPS / 613.2 versus preceding renderer 40.3 FPS / 591.6.
+
+Final root pair in the original region: preceding renderer 52.9 FPS / 606.2 draws, current 50.1 FPS / 607.6 draws (about 5.6% more frame time). Final fork pair: preceding renderer 45.9 FPS / 595.1 draws, current 36.5 FPS / 616.4 draws (about 25.8% more frame time). A separate final current-only sample was 51.7 FPS / 607.7 draws. These contradictory short samples show substantial scene/system variance; **the slower fork sample is retained as a performance limitation, not hidden or certified resolved**. Investigation is complete for this milestone; sustained target-device FPS is not guaranteed. The integration critic accepted this qualification under the plan's investigation requirement. Full graphical routes display the FPS overlay, but accelerated simulation and fixed-fps evidence do not establish real-time sustained performance. Future river effects must be compared against these same-region samples before expansion.
+
+`tests/render_benchmark.gd -- --precurrent` compares against the ignored preceding renderer snapshot; `--fork` samples the fork region. The snapshot is a local comparison artifact, not a required game dependency. Measurements use the same current gameplay/HUD and viewport while substituting only the renderer.
+
+### Commands and limitations
+
+Console engine and sandbox APPDATA overrides remain documented below. Latest commands include `--script tests/river_checks.gd`, `tests/profile_checks.gd`, `tests/profile_adversarial.gd`, `tests/river_adversarial.gd`, and graphical `--script tests/milestone2_graphical.gd --fixed-fps 30`. Screenshots/reports live under ignored `doc/evidence/`; descriptive test harnesses are retained in the repository. Godot's existing sandbox certificate-store warning is recorded; it is not a script/resource error and the game uses no network services.
+
+All planned gates have evidence and the final integrated review passes. Remaining limitations: reviewers inspected selected motion frames and harness/logs rather than uninterrupted AVI playback; automated full routes use analog scripted steering and acceleration; user feedback is qualitative and does not identify branch or timing; sustained FPS varies by region/device. Godot's staged graphical-motion harness also reports two ObjectDB instances leaked at shutdown; this did not prevent recording or exit 0 and was reproduced by the integration critic. It is recorded as a harness shutdown warning, not asserted absent from every future game run. No GDScript/resource/runtime gameplay error was observed in final checks.
+
+## Historical status — first step accepted; second-step foundation and plan
+
+At this earlier stage, the user accepted the first playable milestone and [secondSteps.md](secondSteps.md) was prepared. The foundation and measurements below are historical; the completed second-milestone build and current verdict are recorded above. [conceptEn.md](conceptEn.md) separates confirmed direction from optional later proposals.
 
 ### Implemented foundation — speedometer and starter gearbox
 

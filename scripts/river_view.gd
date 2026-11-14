@@ -13,11 +13,23 @@ const CANOPY_RADIUS := 40.0
 const CANOPY_TEXTURE_SIZE := 128.0
 var canopy_textures: Array[Texture2D] = []
 var rounded_boxes: Dictionary = {}
+var current_textures: Array[Texture2D] = []
+var island_land := PackedVector2Array()
+var island_left := PackedVector2Array()
+var island_right := PackedVector2Array()
 
 func _ready() -> void:
 	# Rasterize the original leaf geometry once, then batch textured trees while scrolling.
 	for variant in range(CANOPY_VARIANTS):
 		canopy_textures.append(_make_canopy_texture(float(variant) * 3.71))
+	for rapid in [false, true]:
+		var svg := '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="80" viewBox="0 0 64 80"><g fill="none" stroke="#d9efcc" stroke-width="2.7" stroke-linecap="round" opacity="%s"><path d="M32 58V18 M24 28L32 18L40 28"/>' % ("0.68" if rapid else "0.45")
+		if rapid:
+			svg += '<path d="M20 62L32 54L44 62 M54 43V55"/>'
+		svg += '</g></svg>'
+		var image := Image.new()
+		image.load_svg_from_string(svg)
+		current_textures.append(ImageTexture.create_from_image(image))
 
 func _make_canopy_texture(seed_value: float) -> Texture2D:
 	var svg := '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="-64 -64 128 128">'
@@ -57,6 +69,7 @@ func _draw() -> void:
 	draw_rect(Rect2(0, 0, 1280, 720), WATER)
 	_draw_water()
 	_draw_banks()
+	_draw_island()
 	for rock: Dictionary in game.rocks:
 		var point := _screen(rock.pos)
 		if point.y > -100 and point.y < 820:
@@ -82,6 +95,67 @@ func _draw_water() -> void:
 			draw_polyline(points, Color(0.42, 0.74, 0.65, 0.15), 2.0, true)
 			if column % 2 == 0:
 				draw_line(Vector2(x + 13, y + 9), Vector2(x + 16, y + 22), Color(0.65, 0.85, 0.72, 0.22), 1.5, true)
+	_draw_current_marks()
+
+func _draw_current_marks() -> void:
+	# Sparse world-anchored arrows move in the same direction as the physical flow.
+	# Double broken chevrons identify fast water through pattern as well as color.
+	var first := int(floor(game.camera_y / 170.0))
+	for row in range(first - 1, first + 6):
+		var world_y := float(row) * 170.0
+		var center: float = game.river_center(world_y)
+		var half: float = game.river_half_width(world_y)
+		for column in range(3):
+			var world_pos := Vector2(center + float(column - 1) * half * 0.63, world_y)
+			var island_width: float = game.island_half_width(world_y)
+			if island_width > 0.0 and absf(world_pos.x - game.island_center(world_y)) < island_width + 20.0:
+				continue
+			var flow: Vector2 = game.current_at(world_pos)
+			var speed := flow.length()
+			if speed < 5.0:
+				continue
+			var direction := flow / speed
+			var drift := fposmod(game.elapsed * speed * 0.65, 70.0) - 35.0
+			var point := _screen(world_pos + direction * drift)
+			var rapid := flow.y < -40.0
+			draw_set_transform(point, direction.angle() + PI * 0.5)
+			draw_texture_rect(current_textures[1 if rapid else 0], Rect2(-24, -30, 48, 60), false)
+			draw_set_transform(Vector2.ZERO)
+
+func _draw_island() -> void:
+	if game.camera_y >= -7600.0 or game.camera_y + 720.0 <= -11200.0:
+		return
+	# Use the same cross-section as collision, including exact pointed ends.
+	# Reuse these buffers; the geometry is bounded by the visible screen height.
+	island_left.clear()
+	island_right.clear()
+	island_land.clear()
+	var top := maxf(-11200.0, game.camera_y - 24.0)
+	var bottom := minf(-7600.0, game.camera_y + 744.0)
+	var y := top
+	while y < bottom:
+		_append_island_section(y)
+		y += 16.0
+	_append_island_section(bottom)
+	island_land.append_array(island_left)
+	for index in range(island_right.size() - 1, -1, -1):
+		island_land.append(island_right[index])
+	if island_land.size() < 4:
+		return
+	draw_colored_polygon(island_land, Color("a7a16b"))
+	draw_polyline(island_left, Color("d1c28b"), 3.0, true)
+	draw_polyline(island_right, Color("d1c28b"), 3.0, true)
+	for tree_y in [-8400.0, -9400.0, -10400.0]:
+		var point := _screen(Vector2(game.island_center(tree_y), tree_y))
+		if point.y > -70.0 and point.y < 790.0:
+			_draw_canopy(point, 30.0, tree_y * 0.01)
+
+func _append_island_section(world_y: float) -> void:
+	var center: float = game.island_center(world_y)
+	var width: float = game.island_half_width(world_y)
+	var screen_y: float = world_y - game.camera_y
+	island_left.append(Vector2(center - width, screen_y))
+	island_right.append(Vector2(center + width, screen_y))
 
 func _draw_banks() -> void:
 	for side in [-1.0, 1.0]:

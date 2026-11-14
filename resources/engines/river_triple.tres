@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="BoatEngine" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/boat_engine.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+display_name = "River Triple"
+engine_id = "river_triple"
+forward_speeds = PackedFloat32Array(90, 155, 190)
+forward_accelerations = PackedFloat32Array(250, 200, 170)
+reverse_speed = 100.0
+reverse_acceleration = 210.0
+fuel_multiplier = 1.18

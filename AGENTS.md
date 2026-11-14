@@ -25,7 +25,9 @@ Deliver one complete, roughly three-minute graybox run: one boat, one cargo type
 
 Keep drones, rafts, wildlife, pirates, purification, vaccine refrigeration, upgrades, procedural levels, and a campaign outside this first milestone. Preserve them as future directions.
 
-Confirmed current controls: W/up applies throttle in the selected direction, S/down and Space brake, A/D or left/right steer. Starter forward gears use 1 and 2; 9 selects reverse. Number-row and keypad bindings share gear actions. Engines may define up to eight forward gears because 9 is reserved for reverse. Releasing throttle coasts to rest. Engine Resources are implemented; engine purchases and profile persistence are planned, not implemented.
+Confirmed current controls: W/up applies throttle in the selected direction, S/down and Space brake, A/D or left/right steer. Starter forward gears use 1 and 2; 9 selects reverse. Number-row and keypad bindings share gear actions. Engines may define up to eight forward gears because 9 is reserved for reverse. Releasing throttle coasts to rest in still water; current can cause drift.
+
+Milestone 2 implements bounded current zones, one collidable island fork, and a between-run depot (B). A completed delivery grants 100 support credits once; River Triple costs 100, offers three forward gears and 18% higher matched-input fuel use. Credits, ownership and equipment persist locally. R resets run state only; progression reset is a separate confirmed depot action. Buy/equip must remain unavailable during active missions. Use isolated profiles for tests, preserving player progression. Integrated acceptance still requires actual graphical evidence and user handling feedback; consult `doc/workbench.md` for the latest verdict.
 
 HUD speed is actual ground speed in km/h using 0.05 meters per world unit. Use the same scale for route distance. Preserve the FPS toggle, wake direction, and cached foliage performance when adding river forces.
 

@@ -114,3 +114,7 @@ These proposals need playtesting and scope decisions before implementation:
 - **Visible consequences:** aid changes a specific service at a landing, while later environmental changes make familiar routes worth reading again. Prefer one meaningful, observable effect to a broad simulation.
 
 Retain navigation and delivery as the core. Each addition should produce a clear player decision or a visible humanitarian result, with performance and readability checked on the actual game.
+
+### Second-milestone implementation snapshot
+
+The current build now includes bounded river currents, a wide/slower versus narrow/assisting-rapids fork, and a between-run depot. Deliveries grant 100 logistics-support credits once. River Triple costs 100, adds a third forward gear and more speed, and consumes 18% more fuel at matched input. Credits, ownership and equipped engine persist locally; mission restart preserves them. These additions realize the small upgrade loop above without adding the later proposals. Actual checks, graphical evidence, remaining performance limits and user-playtest status are in [workbench.md](workbench.md).

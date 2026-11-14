@@ -1,5 +1,7 @@
 # Living River — second steps
 
+Implementation status: **complete, independent integrated review PASS**. Currents, island fork, starter/upgrade engine comparison, support rewards, real depot UI and local progression persistence are implemented. Functional and graphical checks pass, and the user reports clear arrows/controls plus a completed upgrade purchase and replay. [workbench.md](workbench.md) records exact evidence, qualitative human feedback, the slower variable fork-performance sample and remaining limits. The plan below remains the acceptance reference; automated routes are not human timing measurements.
+
 ## Objective and starting point
 
 The user has accepted the first playable step. Build the next milestone around a stronger version of its core loop: **read the river → choose a gear and passage → deliver aid → earn support → improve the boat → run again**. Keep one short authored route and one delivery destination while proving these decisions work together.

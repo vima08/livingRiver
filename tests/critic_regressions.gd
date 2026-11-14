@@ -8,6 +8,7 @@ func check(ok: bool, label: String):
  if not ok: failures += 1
 func run():
  game=load("res://scenes/main.tscn").instantiate()
+ game.set_meta("test_mode",true)
  root.add_child(game)
  game.set_physics_process(false)
  for action in ["steer_left","steer_right","accelerate","slow_down","brake","deliver","restart","start_run","pause_run"]:

@@ -5,6 +5,8 @@
 [resource]
 script = ExtResource("1")
 display_name = "River Twin"
+engine_id = "river_twin"
+fuel_multiplier = 1.0
 forward_speeds = PackedFloat32Array(95, 155)
 forward_accelerations = PackedFloat32Array(260, 210)
 reverse_speed = 100.0

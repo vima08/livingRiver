@@ -14,6 +14,7 @@ func check(ok: bool, label: String) -> void:
 
 func run() -> void:
 	game = load("res://scenes/main.tscn").instantiate()
+	game.set_meta("test_mode", true)
 	root.add_child(game)
 	game.set_physics_process(false)
 	check(game.selected_gear == 1 and game.engine.gear_count() == 2, "Starter engine starts in first with two forward gears")
@@ -50,18 +51,19 @@ func run() -> void:
 	game.simulate(1.0 / 60, Vector2(0, -1), false, false)
 	check(game.boat_pos.y == -26150 and game.speed_kmh() == 0, "Far boundary also clears blocked forward velocity")
 	game.reset_run()
-	var upgraded: Resource = game.engine.duplicate()
-	upgraded.forward_speeds = PackedFloat32Array([95, 155, 190])
-	upgraded.forward_accelerations = PackedFloat32Array([260, 210, 170])
-	game.engine = upgraded
+	game.profile.credits = 100
+	game.open_depot()
+	game.buy_engine()
+	game.equip_engine("river_triple")
+	game.close_depot()
 	game.start_run()
-	check(game.select_gear(3), "Data-defined three-gear engine accepts third gear without new control code")
+	check(game.select_gear(3), "Purchased three-gear engine accepts third gear without new control code")
 	for i in range(120):
 		game.simulate(1.0 / 60, Vector2(0, -1), false, false)
 	check(is_equal_approx(game.velocity.y, -190), "Additional engine gear uses its own speed curve")
 	game.state = "paused"
 	check(not game.select_gear(1), "Paused mission cannot change gear")
-	var report := "# Starter gearbox checks\n\nActual simulation and engine Resources. Three-gear engine is a test fixture, not a purchasable game item.\n\n"
+	var report := "# Starter gearbox checks\n\nActual simulation and engine Resources. Isolated in-memory profile; upgrade purchased through depot API with staged test credits.\n\n"
 	for result in results:
 		print(result)
 		report += "- " + result + "\n"
