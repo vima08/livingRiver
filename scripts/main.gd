@@ -29,6 +29,7 @@ var audio: AudioStreamPlayer
 var low_fuel_warned := false
 var demo := false
 var demo_captures := 0
+var show_fps := false
 
 func river_center(y: float) -> float:
 	return 640.0 + sin(-y / 2300.0) * 115.0 + sin(-y / 780.0) * 28.0
@@ -57,7 +58,8 @@ func setup_inputs() -> void:
 		"steer_left": [KEY_A, KEY_LEFT], "steer_right": [KEY_D, KEY_RIGHT],
 		"accelerate": [KEY_W, KEY_UP], "slow_down": [KEY_S, KEY_DOWN],
 		"brake": [KEY_SPACE], "deliver": [KEY_E], "restart": [KEY_R],
-		"start_run": [KEY_ENTER], "pause_run": [KEY_ESCAPE]
+		"start_run": [KEY_ENTER], "pause_run": [KEY_ESCAPE],
+		"toggle_fps": [KEY_QUOTELEFT]
 	}
 	for action: String in bindings:
 		if not InputMap.has_action(action):
@@ -98,6 +100,8 @@ func start_run() -> void:
 	state = "running"
 
 func _physics_process(delta: float) -> void:
+	if Input.is_action_just_pressed("toggle_fps"):
+		show_fps = not show_fps
 	if Input.is_action_just_pressed("restart"):
 		reset_run()
 		start_run()
@@ -108,7 +112,8 @@ func _physics_process(delta: float) -> void:
 			state = "paused"
 		elif state == "paused":
 			state = "running"
-	var steering := Input.get_vector("steer_left", "steer_right", "accelerate", "slow_down")
+	# Independent axes preserve forward speed while steering diagonally.
+	var steering := Vector2(Input.get_axis("steer_left", "steer_right"), Input.get_axis("accelerate", "slow_down"))
 	if demo:
 		var controls := pilot_controls()
 		simulate(delta, controls[0], controls[1], controls[2])
@@ -122,10 +127,11 @@ func simulate(delta: float, steering: Vector2, braking: bool, unloading: bool) -
 	elapsed += delta
 	impact_cooldown = maxf(0, impact_cooldown - delta)
 	impact_flash = maxf(0, impact_flash - delta * 2.5)
-	var north_speed := -155.0 + steering.y * (75.0 if steering.y < 0 else 255.0)
+	var north_speed := steering.y * (155.0 if steering.y < 0 else 100.0)
 	var target := Vector2(steering.x * 205, north_speed)
 	if braking:
 		target = Vector2.ZERO
+	# Releasing throttle coasts to rest; W/S are required to drive the boat.
 	velocity = velocity.move_toward(target, (390.0 if braking else 210.0) * delta)
 	boat_pos += velocity * delta
 	boat_pos.y = clampf(boat_pos.y, -ROUTE_LENGTH - 150, 90)
@@ -226,7 +232,7 @@ func pilot_controls() -> Array:
 		target_x = dock_pos.x
 	var horizontal := clampf((target_x - boat_pos.x) * 0.025 - velocity.x * 0.004, -1, 1)
 	var near_dock := boat_pos.distance_to(dock_pos) < 80
-	return [Vector2(horizontal, 0), near_dock, near_dock]
+	return [Vector2(horizontal, -1), near_dock, near_dock]
 
 func capture_demo() -> void:
 	if DisplayServer.get_name() == "headless":

@@ -8,6 +8,39 @@ const INK := Color("143e3b")
 const CREAM := Color("f0ead0")
 const ORANGE := Color("ee9251")
 const FOAM := Color("b1d9c1")
+const CANOPY_VARIANTS := 64
+const CANOPY_RADIUS := 40.0
+const CANOPY_TEXTURE_SIZE := 128.0
+var canopy_textures: Array[Texture2D] = []
+var rounded_boxes: Dictionary = {}
+
+func _ready() -> void:
+	# Rasterize the original leaf geometry once, then batch textured trees while scrolling.
+	for variant in range(CANOPY_VARIANTS):
+		canopy_textures.append(_make_canopy_texture(float(variant) * 3.71))
+
+func _make_canopy_texture(seed_value: float) -> Texture2D:
+	var svg := '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="-64 -64 128 128">'
+	svg += '<circle cx="7" cy="8" r="42" fill="#0d291f" fill-opacity="0.38"/>'
+	svg += '<circle r="40" fill="#1b4937"/>'
+	var palette := ["#36683f", "#4e7f45", "#6c944d", "#8da54f"]
+	for i in range(7):
+		var angle := float(i) * TAU / 7.0 + seed_value
+		var center := Vector2.from_angle(angle) * CANOPY_RADIUS * 0.55
+		var tint: String = palette[int(_noise(seed_value + i * 3) * 4.0)]
+		svg += '<circle cx="%.3f" cy="%.3f" r="20.4" fill="%s"/>' % [center.x, center.y, tint]
+		var points := ""
+		for step in range(6):
+			var arc_angle := lerpf(PI * 1.05, PI * 1.55, float(step) / 5.0)
+			var point := center - Vector2(2, 2) + Vector2.from_angle(arc_angle) * CANOPY_RADIUS * 0.31
+			points += "%.3f,%.3f " % [point.x, point.y]
+		svg += '<polyline points="%s" fill="none" stroke="#a6bf59" stroke-opacity="0.3" stroke-width="1.8"/>' % points
+	svg += '</svg>'
+	var image := Image.new()
+	var error := image.load_svg_from_string(svg)
+	if error != OK:
+		push_error("Could not rasterize canopy: %s" % error_string(error))
+	return ImageTexture.create_from_image(image)
 
 func _process(_delta: float) -> void:
 	queue_redraw()
@@ -90,15 +123,11 @@ func _draw_banks() -> void:
 				_draw_palm(Vector2(edge_x + side * 67.0, wy - game.camera_y), float(row) + side)
 
 func _draw_canopy(pos: Vector2, radius: float, seed_value: float) -> void:
-	draw_circle(pos + Vector2(7, 8), radius + 2, Color(0.05, 0.16, 0.12, 0.38))
-	draw_circle(pos, radius, Color("1b4937"))
-	var palette := [Color("36683f"), Color("4e7f45"), Color("6c944d"), Color("8da54f")]
-	for i in range(7):
-		var angle := float(i) * TAU / 7.0 + seed_value
-		var center := pos + Vector2.from_angle(angle) * radius * 0.55
-		var tint: Color = palette[int(_noise(seed_value + i * 3) * 4.0)]
-		draw_circle(center, radius * 0.51, tint)
-		draw_arc(center - Vector2(2, 2), radius * 0.31, PI * 1.05, PI * 1.55, 6, Color(0.65, 0.75, 0.35, 0.3), 1.8, true)
+	var variant := int(_noise(seed_value) * CANOPY_VARIANTS)
+	var size := Vector2.ONE * CANOPY_TEXTURE_SIZE * radius / CANOPY_RADIUS
+	if not Rect2(pos - size * 0.5, size).intersects(Rect2(0, 0, 1280, 720)):
+		return
+	draw_texture_rect(canopy_textures[variant], Rect2(pos - size * 0.5, size), false)
 
 func _draw_palm(pos: Vector2, seed_value: float) -> void:
 	var crown := pos + Vector2(-12, -15)
@@ -137,9 +166,13 @@ func _draw_fuel(pos: Vector2) -> void:
 	draw_line(pos + Vector2(7, -8), pos + Vector2(-7, 8), Color("8d6937"), 3.0, true)
 
 func _rounded_box(color: Color, radius: int) -> StyleBoxFlat:
+	var key := "%s:%d" % [color.to_html(), radius]
+	if rounded_boxes.has(key):
+		return rounded_boxes[key]
 	var box := StyleBoxFlat.new()
 	box.bg_color = color
 	box.set_corner_radius_all(radius)
+	rounded_boxes[key] = box
 	return box
 
 func _draw_village() -> void:
@@ -222,11 +255,16 @@ func _draw_boat() -> void:
 		draw_arc(pos, ring_radius, 0, TAU, 40, Color(1.0, 0.66, 0.37, flash), 4.0, true)
 		draw_arc(pos, ring_radius + 8.0, 0, TAU, 40, Color(1.0, 0.91, 0.7, flash * 0.6), 1.5, true)
 	var angle: float = clampf(game.velocity.x / 750.0, -0.22, 0.22)
-	var strength: float = clampf(game.velocity.length() / 140.0, 0.12, 1.0)
-	for i in range(6):
-		var distance := float(i) * 12.0 + fposmod(game.elapsed * 55.0, 12.0)
-		var alpha := (1.0 - distance / 84.0) * strength * 0.52
-		draw_arc(pos + Vector2(0, 26 + distance), 8 + distance * 0.25, 0.2, PI - 0.2, 12, Color(0.85, 0.94, 0.82, alpha), 2.5, true)
+	var speed: float = game.velocity.length()
+	if speed > 1.0:
+		var strength := clampf(speed / 140.0, 0.0, 1.0)
+		# Local +Y points opposite actual travel, including reverse and lateral motion.
+		draw_set_transform(pos, game.velocity.angle() + PI * 0.5)
+		for i in range(6):
+			var distance := float(i) * 12.0 + fposmod(game.elapsed * 55.0, 12.0)
+			var alpha := (1.0 - distance / 84.0) * strength * 0.52
+			draw_arc(Vector2(0, 36 + distance), 8 + distance * 0.25, 0.2, PI - 0.2, 12, Color(0.85, 0.94, 0.82, alpha), 2.5, true)
+		draw_set_transform(Vector2.ZERO)
 	draw_set_transform(pos, angle)
 	var hull := PackedVector2Array([Vector2(0, -36), Vector2(13, -23), Vector2(18, 4), Vector2(15, 33), Vector2(-15, 33), Vector2(-18, 4), Vector2(-13, -23)])
 	var shadow := PackedVector2Array()

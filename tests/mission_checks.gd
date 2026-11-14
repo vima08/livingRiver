@@ -35,6 +35,15 @@ func run() -> void:
 	game.reset_run()
 	check(game.state == "ready" and game.elapsed == 0 and game.fuel == 100 and game.hull == 100 and not game.pickup_taken and not game.delivered and game.velocity == Vector2.ZERO and game.boat_pos == Vector2(640, 0) and game.camera_y == -520 and game.unload_progress == 0 and not game.low_fuel_warned, "Restart restores mission, boat, camera, village, pickup and resources")
 	game.start_run()
+	for i in range(120):
+		game.simulate(1.0 / 60, Vector2.ZERO, false, false)
+	check(game.boat_pos == Vector2(640, 0) and game.velocity == Vector2.ZERO, "No automatic movement without throttle")
+	for i in range(120):
+		game.simulate(1.0 / 60, Vector2(0, -1), false, false)
+	check(game.boat_pos.y < -200 and game.velocity.y == -155, "W-equivalent throttle accelerates north")
+	for i in range(120):
+		game.simulate(1.0 / 60, Vector2.ZERO, false, false)
+	check(game.velocity == Vector2.ZERO, "Releasing throttle coasts to rest")
 	game.fuel = 0.001
 	game.simulate(1.0 / 60, Vector2.ZERO, true, false)
 	check(game.state == "failure" and game.failure_reason.begins_with("Fuel"), "Fuel exhaustion causes clear failure")
@@ -77,7 +86,7 @@ func run() -> void:
 		game.reset_run()
 		game.start_run()
 		for frame in range(rate * 10):
-			game.simulate(1.0 / rate, Vector2.ZERO, false, false)
+			game.simulate(1.0 / rate, Vector2(0, -1), false, false)
 		positions.append(game.boat_pos)
 	check(positions[0].distance_to(positions[1]) < 2, "Movement remains consistent at 60/120 simulation steps")
 	DirAccess.make_dir_recursive_absolute("res://doc/evidence")

@@ -15,16 +15,21 @@ class HudCanvas extends Control:
 	var mint := Color("8cdbc0")
 	var orange := Color("efad65")
 	var font: Font = ThemeDB.fallback_font
+	var styles: Dictionary = {}
 
 	func _process(_delta: float) -> void:
 		queue_redraw()
 
 	func box(rect: Rect2, color: Color, radius: int = 12, border: Color = Color.TRANSPARENT) -> void:
-		var style := StyleBoxFlat.new()
-		style.bg_color = color
-		style.set_corner_radius_all(radius)
-		style.border_color = border
-		style.set_border_width_all(1)
+		var key := "%s/%d/%s" % [color.to_html(), radius, border.to_html()]
+		if not styles.has(key):
+			var fresh := StyleBoxFlat.new()
+			fresh.bg_color = color
+			fresh.set_corner_radius_all(radius)
+			fresh.border_color = border
+			fresh.set_border_width_all(1)
+			styles[key] = fresh
+		var style: StyleBoxFlat = styles[key]
 		draw_style_box(style, rect)
 
 	func text(at: Vector2, value: String, size: int = 18, color: Color = Color("f4eed9")) -> void:
@@ -49,7 +54,10 @@ class HudCanvas extends Control:
 		text(Vector2(1020, 39), "KOYA LANDING", 12, mint)
 		text(Vector2(1020, 59), "%0.1f km  /  %02d:%02d" % [remaining / 1000, int(game.elapsed) / 60, int(game.elapsed) % 60], 16)
 		box(Rect2(22, 660, 1236, 42), Color(0.035, 0.12, 0.11, 0.96), 10)
-		text(Vector2(40, 686), "A D / arrows  Steer    W  Boost    S  Reverse    SPACE  Brake    Hold E  Unload    R  Restart    ESC  Pause", 15)
+		text(Vector2(40, 686), "A D / arrows  Steer   W  Forward   S  Reverse   SPACE  Brake   Hold E  Unload   R  Restart   ESC  Pause   `  FPS", 14)
+		if game.show_fps:
+			box(Rect2(1142, 88, 116, 34), ink, 8)
+			text(Vector2(1153, 111), "%d FPS" % Engine.get_frames_per_second(), 18, mint)
 		if game.state == "running":
 			var message := "NORTHBOUND  /  Follow the river to Koya Landing"
 			if not game.pickup_taken and absf(game.boat_pos.y - game.fuel_pickup.y) < 650:
@@ -70,7 +78,7 @@ class HudCanvas extends Control:
 		var eyebrow := "LIVING RIVER  /  FIRST RELIEF RUN"
 		var lines: Array[String] = [
 			"Bring water filters to Koya Landing, 26 km upriver.",
-			"Cruise north automatically. Steer; hold S to reverse.",
+			"Hold W to accelerate. A/D steer. Hold S to reverse.",
 			"Collect the orange refuel buoy halfway along the route.",
 			"At the dock: hold SPACE to stop, then hold E to unload."
 		]
@@ -88,7 +96,7 @@ class HudCanvas extends Control:
 		elif game.state == "paused":
 			eyebrow = "RIVER LOG  /  PAUSED"
 			title = "Take a breath."
-			lines = ["Your boat and resources are paused.", "A / D or arrows: steer. W: boost. Hold S: reverse.", "SPACE: brake. Hold E inside the dock circle to unload.", "R restarts the entire run."]
+			lines = ["Your boat and resources are paused.", "A / D or arrows: steer. Hold W: forward. S: reverse.", "SPACE: brake. Hold E inside the dock circle to unload.", "R restarts the run. Backtick toggles the FPS counter."]
 			action = "ESC  /  Continue upriver"
 		# Leave the landing visible to the left on completion.
 		var origin := Vector2(340, 205)

@@ -15,14 +15,15 @@ From PowerShell on this machine:
 | Controls | Action |
 |---|---|
 | A / D or Left / Right | Steer across the river |
-| W / Up | Boost northward cruise |
+| W / Up | Accelerate northward |
 | S / Down | Slow, then reverse south to recover a missed turn or dock |
 | Space | Brake to a complete stop |
 | Hold E | Unload while stopped inside the dock circle |
 | R | Restart the entire run |
 | Escape | Pause / resume |
+| Backtick / grave accent | Show / hide the FPS counter (hidden on startup) |
 
-The boat cruises north when you release the controls. Collect the orange refuel buoy near the midpoint. Stay clear of rocks and the sandy bank edge. At Koya Landing, enter the dashed circle, hold Space, then hold E for two seconds. Delivery activates the village pump and radio beacon. Running out of fuel or hull ends the run.
+Hold W to move forward, S to slow and reverse, and A/D to steer. Releasing the throttle lets the boat coast to a stop. Collect the orange refuel buoy near the midpoint. Stay clear of rocks and the sandy bank edge. At Koya Landing, enter the dashed circle, hold Space, then hold E for two seconds. Delivery activates the village pump and radio beacon. Running out of fuel or hull ends the run.
 
 ## Checks and evidence
 

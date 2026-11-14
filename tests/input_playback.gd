@@ -34,10 +34,23 @@ func _process(_delta: float) -> bool:
 	frame += 1
 	match frame:
 		10: capture("input_00_briefing")
+		15:
+			check(not game.show_fps, "FPS counter is hidden on startup")
+			key(KEY_QUOTELEFT, true)
+		16: key(KEY_QUOTELEFT, false)
+		20:
+			check(game.show_fps, "Backtick shows the FPS counter")
+			capture("input_fps_visible")
+			key(KEY_QUOTELEFT, true)
+		21: key(KEY_QUOTELEFT, false)
+		25: check(not game.show_fps, "Backtick hides the FPS counter again")
 		30: key(KEY_ENTER, true)
 		31: key(KEY_ENTER, false)
+		32:
+			check(game.state == "running" and game.velocity == Vector2.ZERO, "Enter starts mission without automatic movement")
+			key(KEY_W, true)
 		60:
-			check(game.state == "running" and game.velocity.y < -100, "Enter starts cruise through Input Map")
+			check(game.state == "running" and game.velocity.y < -100, "W accelerates through Input Map")
 			key(KEY_D, true)
 		100:
 			check(game.velocity.x > 100, "Physical D input steers right")
@@ -50,6 +63,7 @@ func _process(_delta: float) -> bool:
 			capture("input_02_steer_left")
 		145:
 			key(KEY_A, false)
+			key(KEY_W, false)
 			key(KEY_SPACE, true)
 		185:
 			check(game.velocity.length() < 1, "Space brakes to a full stop")
@@ -64,6 +78,7 @@ func _process(_delta: float) -> bool:
 		250:
 			game.boat_pos = game.rocks[0].pos + Vector2(0, 95)
 			game.velocity = Vector2(0, -155)
+			key(KEY_W, true)
 		275:
 			check(game.hull < 100, "Visible rock contact damages hull")
 			capture("input_05_collision")
@@ -71,7 +86,9 @@ func _process(_delta: float) -> bool:
 			game.boat_pos = game.dock_pos + Vector2(-10, 130)
 			game.velocity = Vector2(0, -155)
 		310: capture("input_06_dock_approach")
-		315: key(KEY_SPACE, true)
+		315:
+			key(KEY_W, false)
+			key(KEY_SPACE, true)
 		345:
 			check(game.can_deliver(), "Dock approached and stopped through ordinary controls")
 			key(KEY_E, true)
