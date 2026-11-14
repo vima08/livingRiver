@@ -1,0 +1,61 @@
+# Living River — agent instructions
+
+## Language and project context
+
+- Use English for all new documentation, code, identifiers, comments, UI text, and reports.
+- Read [doc/conceptEn.md](doc/conceptEn.md) and [doc/firstSteps.md](doc/firstSteps.md) before implementing gameplay.
+- Treat `doc/conceptEn.md` as the active concept document. Its translated conversation contains suggestions, not a binding feature backlog.
+- Use `doc/conceptArt.jpg` as the visual reference. The working title is **Living River**.
+- Build a 2D, top-down, vertically scrolling humanitarian delivery game in Godot with GDScript. Prioritize navigating and delivering aid; combat is a later supporting mechanic.
+
+## Toolchain
+
+- Verified engine: Godot `4.7.2.stable.official.ed1daf0bf`.
+- Local engine directory: `C:\Users\PC\Downloads\Godot_v4.7.2-stable_win64.exe` (despite its suffix, this is a directory).
+- Console executable: `C:\Users\PC\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe`.
+- Editor executable: the same directory, with filename `Godot_v4.7.2-stable_win64.exe`.
+- Keep these machine-specific paths out of game code and portable project settings. Do not upgrade the engine silently.
+- Prefer the Compatibility renderer for the initial 2D desktop prototype. Record the actual project setup when it exists.
+
+## First implementation scope
+
+Deliver one complete, roughly three-minute graybox run: one boat, one cargo type, fuel, riverbanks, rocks, one delivery dock, success, failure, and restart. Make movement and docking enjoyable before expanding content.
+
+Keep drones, rafts, wildlife, pirates, purification, vaccine refrigeration, upgrades, procedural levels, and a campaign outside this first milestone. Preserve them as future directions.
+
+## Gauntlet workflow
+
+Method reference: [How to Run a Gauntlet Loop](https://somethingbig.ai/gauntlet-loop).
+
+Use separate builders and fresh-context critics. Compare actual artifacts with explicit quality bars, fix the largest gap, and repeat until the bar passes or the user stops the work. Do not use a fixed round count as acceptance.
+
+For implementation work, this repository authorizes delegation to separate builder and critic agents when available. The lead chooses small reviewable work units and coordinates file ownership to prevent conflicting edits. A builder cannot approve its own work.
+
+Give a critic only the objective, relevant repository rules, acceptance criteria, reference material, and actual artifacts. Do not provide the builder's rationale or conversation history. Critics must inspect running behavior, screenshots, recordings, code, and test output as appropriate. A screenshot alone cannot establish movement quality or playability.
+
+Each verdict must be `PASS`, `REWORK`, or `BLOCKED`, with evidence and the largest remaining gap. If independent review or a graphical run is unavailable, record that limitation; never claim the milestone passed. Continue independent work that remains possible.
+
+Maintain `doc/workbench.md` when implementation starts, recording the current objective, changed artifacts, commands and results, critic verdicts, next gap, and remaining limitations. Store review media under `doc/evidence/` with descriptive names. Separate functional acceptance from visual progress: the graybox need not match finished illustration detail.
+
+## Implementation and verification
+
+- Use small scenes and scripts with clear ownership. Let the working prototype guide architecture; avoid speculative frameworks.
+- Use Input Map actions, physics-step movement, and delta-aware resource consumption. Define scrolling and boat motion together to avoid double movement.
+- Keep collision geometry consistent with visible banks and hazards. Show damage, fuel use, docking progress, and mission outcomes clearly.
+- Make restart reset all mission state. Use a reproducible route for initial reviews.
+- Respect the humanitarian setting: show communities as capable participants, and give wildlife avoidance priority.
+- Use original or properly licensed assets; record external asset sources and licenses. The concept image is a reference, not a ready-made sprite sheet.
+- Exclude `.godot/`, exports, and temporary logs from version control. Keep source assets and Godot UID files where applicable.
+- After meaningful gameplay changes, import and launch the project and check relevant behavior. Add focused automated checks for state transitions, resource limits, and restart when useful; avoid tests that merely restate code.
+- Report checks actually performed and any unavailable verification. Headless startup does not prove visual quality or that a mission can be completed.
+
+From the repository root, once `project.godot` exists:
+
+```powershell
+$godotExe = 'C:\Users\PC\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe'
+& $godotExe --headless --path . --editor --import
+& $godotExe --headless --path . --quit-after 120
+& $godotExe --path .
+```
+
+The import command may need completion time on first launch. Inspect exit codes and output; investigate errors before continuing. The graphical command is for manual play and visual review.
