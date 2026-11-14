@@ -2,8 +2,8 @@
 
 ## Language and project context
 
-- Use English for all new documentation, code, identifiers, comments, UI text, and reports.
-- Read [doc/conceptEn.md](doc/conceptEn.md), [doc/firstSteps.md](doc/firstSteps.md), [doc/secondSteps.md](doc/secondSteps.md), and [doc/thirdSteps.md](doc/thirdSteps.md) before implementing gameplay.
+- Use English for source documentation, code, identifiers, comments, translation keys and reports. English is the source/default UI language; the user explicitly requested Russian player-facing localization. Russian translation values and language-selection labels are allowed. Keep saved gameplay IDs language-independent.
+- Read [doc/conceptEn.md](doc/conceptEn.md), [doc/firstSteps.md](doc/firstSteps.md), [doc/secondSteps.md](doc/secondSteps.md), [doc/thirdSteps.md](doc/thirdSteps.md), and [doc/fourthSteps.md](doc/fourthSteps.md) before implementing gameplay.
 - Treat `doc/conceptEn.md` as the active concept document. Its translated conversation contains suggestions, not a binding feature backlog.
 - Use `doc/conceptArt.jpg` as the visual reference. The working title is **Living River**.
 - Build a 2D, top-down, vertically scrolling humanitarian delivery game in Godot with GDScript. Prioritize navigating and delivering aid; combat is a later supporting mechanic.
@@ -34,6 +34,8 @@ HUD speed is actual ground speed in km/h using 0.05 meters per world unit. Use t
 Keep water strokes batched and palm fronds cached at startup. Individual antialiased strokes/frond lines caused hundreds of draw calls across the entire route; November 15 measurements and limits are in `doc/workbench.md`. Compare renderer changes with the same viewport, region and sample path, using frame time and tails as well as average FPS; diagnostic layer removal is not a shipped optimization.
 
 Milestone 3 offers Light (Koya filters, 100 support) and Full relief (Luma food, 60; then Koya filters, 100). Full cargo reduces acceleration by 20% and braking deceleration by 15% until food arrives. R returns to the briefing; the depot's Plan next run does the same. Cargo locks at launch. Per-order rewards commit before removing cargo; failed saves retain cargo for retry. Version-2 profiles migrate valid version-1 progress and retain bounded receipts for the latest run only. Keep human handling acceptance distinct from automated checks.
+
+Milestone 4 adds a first-launch language choice, start menu, English/Russian localization, separate `settings.cfg` preferences and original cached engine/music/event audio. Menu/settings/credits own their input; Play opens a fresh briefing, paused Settings preserves the mission, Back keeps it paused, and ending a run returns to menu with committed progression intact. Tests isolate both preferences and progression; ordinary scene fixtures bypass startup UI unless `show_frontend` metadata is true. Headless audio output is intentionally disabled; actual playback/heard quality requires graphical/listening evidence. Use `doc/fourthSteps.md` and the workbench for acceptance and current limits. The following milestone-5 outline (connected map, saved locations and return travel) remains unimplemented and outside this work.
 
 ## Gauntlet workflow
 

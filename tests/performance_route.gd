@@ -27,6 +27,11 @@ func setup() -> void:
 	game.set_physics_process(false)
 	game.select_load("full")
 	game.show_fps = true
+	if "--quiet-output" in OS.get_cmdline_user_args():
+		# Keep actual mixer/playback workload while avoiding overlapping human audio review.
+		if is_instance_valid(game.audio) and game.audio.has_method("update_mix"):
+			game.audio.update_mix()
+		AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Master"), -80.0)
 
 func _physics_process(delta: float) -> bool:
 	if running and not finished:
@@ -91,6 +96,8 @@ func finish(now: int) -> void:
 	var report := "# Real-time graphical full-relief route\n\n"
 	report += "PASS\n\n" if okay else "FAIL\n\n"
 	report += "Default player VSync/window/render settings. Default 60 Hz physics and time scale 1.0, one pilot-driven simulate(delta) per real physics tick, isolated in-memory progression. No position/resource staging within route. Not a human playtest. Includes capture overhead at first region entry; no frame samples discarded after initial 30-frame warmup.\n\n"
+	if "--quiet-output" in OS.get_cmdline_user_args():
+		report += "Test-only quiet output: Master gain attenuated to -80 dB after applying default settings, without bus mute, stopping players or disabling audio updates. Actual WASAPI playback/mixer work remains active. This differs from default output gain and is not audible-quality acceptance.\n\n"
 	report += "Wall %.3f s; simulation %.3f s; %d physics steps; state %s; support %d; fuel %.3f; hull %.3f.\n\n" % [float(now - start_us) / 1000000.0, game.elapsed, physics_steps, game.state, game.run_support, game.fuel, game.hull]
 	report += "| Region | Frames | Mean FPS | Mean ms | p95 ms | Max ms | >33.333 ms |\n|---|---:|---:|---:|---:|---:|---:|\n"
 	report += "| overall | " + statistics(all_frames) + " |\n"

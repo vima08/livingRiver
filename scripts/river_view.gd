@@ -1,6 +1,8 @@
 class_name RiverView
 extends Node2D
 
+const Text = preload("res://scripts/localization.gd")
+
 # All scenery is original geometry. World-anchored motifs keep the route stable.
 var game: Node
 const WATER := Color("287e79")
@@ -299,7 +301,7 @@ func _draw_village() -> void:
 	_draw_house(Vector2(shore + 92, dock.y - 125), Vector2(105, 76), true)
 	_draw_house(Vector2(shore + 225, dock.y + 85), Vector2(100, 72), false)
 	draw_rect(Rect2(shore + 28, dock.y + 115, 190, 30), INK)
-	draw_string(ThemeDB.fallback_font, Vector2(shore + 39, dock.y + 136), "KOYA LANDING", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, CREAM)
+	draw_string(ThemeDB.fallback_font, Vector2(shore + 39, dock.y + 136), Text.t("KOYA LANDING"), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, CREAM)
 	var mast := Vector2(shore + 220, dock.y - 108)
 	draw_circle(mast + Vector2(5, 5), 14, Color(0.1, 0.2, 0.13, 0.3))
 	draw_line(mast + Vector2(-12, 7), mast + Vector2(0, -68), CREAM, 3, true)
@@ -360,11 +362,11 @@ func _draw_luma() -> void:
 	for offset in [-70, 70]:
 		draw_line(shelter + Vector2(offset, 45), shelter + Vector2(offset, 72), INK, 4)
 	draw_rect(Rect2(shelter + Vector2(-72, -13), Vector2(144, 25)), INK)
-	draw_string(ThemeDB.fallback_font, shelter + Vector2(-61, 5), "FOOD SHELTER", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, CREAM)
+	draw_string(ThemeDB.fallback_font, shelter + Vector2(-61, 5), Text.t("FOOD SHELTER"), HORIZONTAL_ALIGNMENT_LEFT, -1, 15, CREAM)
 	var sign := Vector2(shore - 115, dock.y + 90)
 	draw_rect(Rect2(sign + Vector2(-86, -19), Vector2(172, 32)), INK)
-	draw_string(ThemeDB.fallback_font, sign + Vector2(-72, 3), "LUMA LANDING", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, CREAM)
-	draw_string(ThemeDB.fallback_font, sign + Vector2(-72, 36), "FOOD RECEIVED" if received else "FOOD REQUEST", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, CREAM)
+	draw_string(ThemeDB.fallback_font, sign + Vector2(-72, 3), Text.t("LUMA LANDING"), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, CREAM)
+	draw_string(ThemeDB.fallback_font, sign + Vector2(-72, 36), Text.t("FOOD RECEIVED" if received else "FOOD REQUEST"), HORIZONTAL_ALIGNMENT_LEFT, -1, 14, CREAM)
 	# Before arrival the crew prepares an empty receiving table; afterwards crates
 	# sit under the shelter and the team works between its store and the landing.
 	draw_rect(Rect2(shore - 70, dock.y - 18, 42, 31), Color("6e6947"))

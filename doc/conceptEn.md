@@ -124,3 +124,27 @@ The current build now includes bounded river currents, a wide/slower versus narr
 [thirdSteps.md](thirdSteps.md) brings the original cargo-choice idea into the existing short run: filters for Koya alone, or filters plus food for Luma Landing after the refuel buoy. A full load responds more slowly and needs more braking distance; unloading food lightens it. Two matching deliveries create a reason to choose gears, a passage and an extra stop. Scripted runs establish starter viability; human handling acceptance remains separate.
 
 The build includes load cards, a two-item manifest, per-order support (60 for food and 100 for filters), clear partial outcomes and version-1 progress migration. R returns to load selection while preserving progression. Luma's receiving team stocks its shelter; Koya's filters activate the pump and clinic radio. See the workbench for current review evidence and remaining acceptance gates. Drones, refrigeration, combat and a wider campaign remain deferred.
+
+## Concept extension — November 15, 2026
+
+The user wants a map of rivers and villages, with the next run starting where the previous journey ended, and some legs working against the current. They also requested a start menu, a language choice with Russian translation, engine sound and looping music. These are requested directions; the details below are proposed defaults, not already implemented behavior.
+
+### A continuing relief journey
+
+Extend the loop to **choose a contract at the current landing → load aid → read flow and choose a route → deliver → plan the next departure from the arrival village**. Begin with a small authored Base–Luma–Koya network. Communities can act as receiving partners and named resupply points. Use a few explicit contracts before adding a campaign generator or a larger economy.
+
+Keep the geography recognizable on return journeys. A southbound leg should use forward gears with the boat facing south, and camera look-ahead following its travel. Show river-flow arrows and upstream/downstream labels on the map and in the briefing. Current belongs to the river reach; it must not reverse simply because a mission changes direction. The current assisting-rapids balance needs deliberate reconciliation with a consistent network flow and fresh fuel/docking measurements.
+
+Proposed continuity uses a last-safe-landing checkpoint: successful committed arrivals update the departure location; failure or abandoning an unfinished leg returns to that landing. Credits, engines, rewards and location need consistent saved transactions. Do not imply mid-river save/resume. Keep service/refuel rules explicit before adding resource carry-over or repair costs. Persistent village simulation, reputation, free roaming and procedural geography remain later work.
+
+### Welcome and language
+
+Add a start menu and persistent language/audio settings around the current runs. English remains the source/default language; Russian is a complete player-facing translation, including manually drawn HUD and village text, save errors and dynamic outcomes. Verify Cyrillic fonts, longer labels and physical key bindings. Keep localization settings separate from progression, with stable language-independent gameplay IDs.
+
+### Sound and atmosphere
+
+An engine loop should communicate idle, throttle, gears and load without mistaking current-driven motion for engine power. Add quiet looping instrumental music and retain distinct event cues, with independent music/effects levels and mute. Loops must survive menu/restart transitions without stacking or clicks. Use original or properly licensed assets with documented provenance, and require actual listening review rather than inferring audible quality from code or meters.
+
+### Planned sequence
+
+[fourthSteps.md](fourthSteps.md) implements milestone 4 for menu, English/Russian UI and original engine/music audio, followed by a separately reviewed milestone 5 for connected departures and two-way river travel. Settings persist separately from progression. The user confirms Russian is good and recurring engine clicks are fixed; remaining listening, handling and performance acceptance are tracked in [workbench.md](workbench.md). Connected locations and return routes remain unimplemented.

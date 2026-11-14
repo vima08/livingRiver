@@ -4,7 +4,9 @@ A Godot 4.7.2 river-delivery prototype: choose filters for Koya alone or a heavi
 
 ## Play
 
-Open `project.godot` in Godot **4.7.2** and press **F6** with the main scene open, or **F5** to run the project. Choose Light or Full relief in the briefing, then press **Enter** or click **Cast off**.
+Open `project.godot` in Godot **4.7.2** and press **F6** with the main scene open, or **F5** to run the project. On first launch choose English or Russian, then select **Play**. Choose Light or Full relief in the briefing, then press **Enter** or click **Cast off**.
+
+The start menu provides Settings, Credits and Quit. Settings offers live English/Russian switching plus separate Master, Music and Effects levels; zero mutes that bus, and Effects includes the engine. Language and levels persist separately from progression in `settings.cfg`. Open Settings from the pause screen to adjust them during a run; Back keeps the mission paused. **End run and return to menu** abandons unfinished cargo while retaining saved support and engines. Play opens a fresh briefing; mid-river resume is not implemented.
 
 From PowerShell on this machine:
 
@@ -38,6 +40,8 @@ Press **B** in the briefing or after a run to open the depot. **River Triple** c
 
 Credits, ownership and equipped engine are saved in Godot's user-data directory as `profile.json`. Valid version-1 profiles migrate automatically. R abandons unfinished cargo and returns to a fresh briefing while retaining committed rewards. The depot's separate **Reset progression** button requires a second confirmation click and returns to the starter profile. Invalid saves fall back to the starter; failed reward saves retain cargo and permit unloading retry. Tests use isolated profiles and do not spend your credits.
 
+The game has an original looping engine, a quiet 32-second instrumental theme and cached event cues. Throttle, gear and load affect the engine; unpowered current drift does not rev it. Music and engine use separate players so a delivery/collision cue cannot interrupt them. Audio provenance and regeneration instructions are in [assets/audio/README.md](assets/audio/README.md). Human listening/translation acceptance and performance qualifications are recorded in the workbench.
+
 The starter **River Twin** and alternative **River Triple** are data Resources in `resources/engines/`. Number keys select supported gears; unavailable gears leave the selection unchanged and show a message. Data supports at most eight forward gears, with 9 reserved for reverse. Current speed is ground speed, so assisting flow can exceed the engine's still-water speed range.
 
 ## Checks and evidence
@@ -58,9 +62,16 @@ Use the console executable above as `$godotExe`:
 & $godotExe --headless --path . --script tests/order_profile_checks.gd
 & $godotExe --headless --path . --script tests/save_adversarial3.gd
 & $godotExe --headless --path . --script tests/delivery_adversarial3.gd
+& $godotExe --headless --path . --script tests/settings_checks.gd
+& $godotExe --headless --path . --script tests/localization_checks.gd
+& $godotExe --headless --path . --script tests/audio_checks.gd
+& $godotExe --headless --path . --script tests/audio_loop_checks.gd
+& $godotExe --headless --path . --script tests/presentation_adversarial4.gd
 ```
 
 `tests/mission_checks.gd` measures the complete route with scripted steering and exercises resource/mission transitions. The independent regression suite covers dock overshoot recovery and real engine restart input. Neither is a human playtest.
+
+Scene fixtures explicitly bypass the front end and isolate settings/progression unless `show_frontend` metadata is set. `presentation_adversarial4.gd` and `localization_adversarial4.gd` exercise the actual new screens graphically. Headless audio output is disabled to avoid engine Dummy-playback teardown leaks; headless buffer/control checks do not establish audible output. `audio_runtime4.gd` requires graphical real-time execution for 114 seconds and records actual mixer playback. Its Master-bus recording is before Master mute/fader, so physical mute and audible quality still require listening.
 
 To reproduce normal-speed graphical keyboard playback (overwrites its evidence):
 
@@ -94,4 +105,4 @@ Review media is local ignored evidence. These harnesses use test profiles and do
 
 To measure rendering, use `tests/performance_probe.gd -- --mode=current --long` in a graphical run (uncapped, physics disabled). `tests/performance_route.gd` instead measures a complete real-time scripted Full relief run using the normal window/VSync settings and 60 Hz physics. Run these separately from the editor's game or other benchmark windows. See the workbench for before/after results and remaining frame-time spikes.
 
-See [the workbench](doc/workbench.md) for exact review status and limitations, [the accepted first-step plan](doc/firstSteps.md), [the completed second-step plan](doc/secondSteps.md), [third-step acceptance](doc/thirdSteps.md), and [the concept](doc/conceptEn.md) for future directions. Art is intentionally a readable procedural prototype rather than finished painted artwork.
+See [the workbench](doc/workbench.md) for exact review status and limitations, [the accepted first-step plan](doc/firstSteps.md), [the completed second-step plan](doc/secondSteps.md), [third-step acceptance](doc/thirdSteps.md), [the proposed fourth step and river-map follow-up](doc/fourthSteps.md), and [the concept](doc/conceptEn.md) for future directions. Art is intentionally a readable procedural prototype rather than finished painted artwork.

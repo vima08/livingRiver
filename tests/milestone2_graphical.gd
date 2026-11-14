@@ -51,6 +51,9 @@ func click(point: Vector2, pressed: bool) -> void:
 	event.pressed = pressed
 	Input.parse_input_event(event)
 
+func click_depot(index: int, pressed: bool) -> void:
+	click(game.hud.canvas.depot_buttons[index].get_global_rect().get_center(), pressed)
+
 func transition(next: String) -> void:
 	phase = next
 	phase_frames = 0
@@ -100,18 +103,18 @@ func _process(_delta: float) -> bool:
 	elif phase == "buy":
 		if phase_frames == 3:
 			capture("depot_before_purchase")
-		if phase_frames == 10: click(Vector2(840, 415), true)
-		if phase_frames == 11: click(Vector2(840, 415), false)
+		if phase_frames == 10: click_depot(1, true)
+		if phase_frames == 11: click_depot(1, false)
 		if phase_frames == 20:
 			check("river_triple" in game.profile.owned and game.profile.credits == 0, "Real depot Buy button spends earned 100 credits once")
 			capture("depot_purchased")
-		if phase_frames == 30: click(Vector2(840, 415), true)
-		if phase_frames == 31: click(Vector2(840, 415), false)
+		if phase_frames == 30: click_depot(1, true)
+		if phase_frames == 31: click_depot(1, false)
 		if phase_frames == 40:
 			check(game.engine.engine_id == "river_triple", "Real Equip button selects purchased three-gear engine")
 			capture("depot_equipped")
-		if phase_frames == 50: click(Vector2(690, 539), true)
-		if phase_frames == 51: click(Vector2(690, 539), false)
+		if phase_frames == 50: click_depot(3, true)
+		if phase_frames == 51: click_depot(3, false)
 		if phase_frames == 60:
 			check(game.state == "ready" and game.engine.engine_id == "river_triple", "Real Plan next run button returns upgraded briefing")
 			game.start_run()
@@ -121,13 +124,13 @@ func _process(_delta: float) -> bool:
 		game.open_depot()
 		transition("starter_equip")
 	elif phase == "starter_equip":
-		if phase_frames == 10: click(Vector2(410, 415), true)
-		if phase_frames == 11: click(Vector2(410, 415), false)
+		if phase_frames == 10: click_depot(0, true)
+		if phase_frames == 11: click_depot(0, false)
 		if phase_frames == 20:
 			check(game.engine.engine_id == "river_twin", "Owned starter can be equipped free")
 			capture("depot_starter_again")
-		if phase_frames == 30: click(Vector2(690, 539), true)
-		if phase_frames == 31: click(Vector2(690, 539), false)
+		if phase_frames == 30: click_depot(3, true)
+		if phase_frames == 31: click_depot(3, false)
 		if phase_frames == 40:
 			game.start_run()
 			start_case("rapids", 2)

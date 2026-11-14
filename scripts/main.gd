@@ -12,6 +12,10 @@ const STARTER_ENGINE = preload("res://resources/engines/river_twin.tres")
 const UPGRADE_ENGINE = preload("res://resources/engines/river_triple.tres")
 const Profile = preload("res://scripts/player_profile.gd")
 const Manifest = preload("res://scripts/relief_manifest.gd")
+const Settings = preload("res://scripts/game_settings.gd")
+const Text = preload("res://scripts/localization.gd")
+const FrontEnd = preload("res://scripts/front_end.gd")
+const Audio = preload("res://scripts/river_audio.gd")
 
 var boat_pos := Vector2(640, 0)
 var velocity := Vector2.ZERO
@@ -30,7 +34,7 @@ var rocks: Array = []
 var fuel_pickup := Vector2.ZERO
 var dock_pos := Vector2.ZERO
 var hud: CanvasLayer
-var audio: AudioStreamPlayer
+var audio: Node
 var low_fuel_warned := false
 var demo := false
 var demo_captures := 0
@@ -53,9 +57,81 @@ var unload_notice := ""
 var run_support := 0
 var unload_stop := ""
 var pilot_skip_luma := false
+var settings: RefCounted
+var front_end: CanvasLayer
+var ui_screen := ""
+var screen_return := ""
+var engine_throttle := 0.0
+var _input_guard_until := -1
+var _notice_templates: Dictionary = {}
+
+func set_notice(kind: String, source: String, values: Array = []) -> void:
+	var raw: String = source % values if not values.is_empty() else source
+	set(kind, raw)
+	_notice_templates[kind] = {"source": source, "values": values.duplicate(), "raw": raw}
+
+func localized_notice(kind: String) -> String:
+	var raw := str(get(kind))
+	var entry: Dictionary = _notice_templates.get(kind, {})
+	if not entry.is_empty() and entry.raw == raw:
+		return Text.t(entry.source, entry.values)
+	return Text.t(raw)
+
+func _guard_ui_transition() -> void:
+	# The Enter that activates Play/Back must not also cast off behind that screen.
+	_input_guard_until = Engine.get_process_frames() + 1
+
+func choose_language(code: String) -> void:
+	if ui_screen not in ["language", "settings"] or code not in ["en", "ru"]:
+		return
+	settings.set_locale(code)
+	Text.set_locale(settings.locale)
+	if ui_screen == "language":
+		ui_screen = "menu"
+	_guard_ui_transition()
+
+func play_from_menu() -> void:
+	if ui_screen != "menu":
+		return
+	ui_screen = ""
+	reset_run()
+	_guard_ui_transition()
+
+func open_settings() -> void:
+	if ui_screen not in ["", "menu"] or state == "running":
+		return
+	screen_return = ui_screen
+	ui_screen = "settings"
+	_guard_ui_transition()
+
+func close_screen() -> void:
+	if ui_screen == "settings":
+		ui_screen = screen_return
+	elif ui_screen == "credits":
+		ui_screen = "menu"
+	_guard_ui_transition()
+
+func resume_run() -> void:
+	if ui_screen.is_empty() and state == "paused":
+		state = "running"
+		_guard_ui_transition()
+
+func return_to_menu() -> void:
+	if ui_screen == "language":
+		return
+	demo = false
+	Engine.time_scale = 1.0
+	ui_screen = ""
+	reset_run()
+	ui_screen = "menu"
+	_guard_ui_transition()
+
+func quit_game() -> void:
+	if ui_screen == "menu":
+		get_tree().quit()
 
 func select_load(preset: String) -> bool:
-	if state != "ready" or preset not in ["light", "full"]:
+	if not ui_screen.is_empty() or state != "ready" or preset not in ["light", "full"]:
 		return false
 	load_preset = preset
 	manifest.configure(preset)
@@ -76,7 +152,7 @@ func next_stop_position() -> Vector2:
 	return luma_pos if not order.is_empty() and order.stop == "luma" else dock_pos
 
 func complete_order(stop: String) -> bool:
-	if state != "running" or nearby_stop() != stop or velocity.length() >= DOCK_SPEED:
+	if not ui_screen.is_empty() or state != "running" or nearby_stop() != stop or velocity.length() >= DOCK_SPEED:
 		return false
 	var order: Dictionary = manifest.pending_for_stop(stop)
 	if order.is_empty():
@@ -88,12 +164,12 @@ func complete_order(stop: String) -> bool:
 	if not committed:
 		committed = profile.award_order(mission_id, order.id)
 	if not committed:
-		unload_notice = "Delivery not saved. Cargo retained. Hold E to retry. " + profile.load_notice
+		set_notice("unload_notice", "Delivery not saved. Cargo retained. Hold E to retry. %s", [profile.load_notice])
 		return false
 	manifest.mark_completed(order.id)
 	run_support = manifest.earned_support()
 	reward_received = run_support > 0
-	unload_notice = "%s delivered to %s. +%d support saved." % [order.cargo, order.recipient, order.reward]
+	set_notice("unload_notice", "%s delivered to %s. +%d support saved.", [order.cargo, order.recipient, order.reward])
 	unload_progress = 0
 	play_tone(880, 0.35)
 	if stop == "koya" or manifest.completed_count() == manifest.total_count():
@@ -109,7 +185,7 @@ func apply_equipped_engine() -> void:
 	selected_gear = 1
 
 func open_depot() -> void:
-	if state not in ["ready", "success", "partial", "failure"]:
+	if not ui_screen.is_empty() or state not in ["ready", "success", "partial", "failure"]:
 		return
 	depot_return_state = state
 	state = "depot"
@@ -117,12 +193,14 @@ func open_depot() -> void:
 	reset_profile_pending = false
 
 func close_depot() -> void:
+	if not ui_screen.is_empty():
+		return
 	if state == "depot":
 		state = depot_return_state
 	reset_profile_pending = false
 
 func buy_engine() -> void:
-	if state != "depot":
+	if not ui_screen.is_empty() or state != "depot":
 		return
 	if profile.try_purchase("river_triple"):
 		depot_notice = "River Triple purchased. Equip it to use third gear next run."
@@ -130,16 +208,16 @@ func buy_engine() -> void:
 		depot_notice = profile.load_notice if not profile.load_notice.is_empty() else "Need 100 support credits. Complete a delivery first."
 
 func equip_engine(id: String) -> void:
-	if state != "depot":
+	if not ui_screen.is_empty() or state != "depot":
 		return
 	if profile.equip_engine(id):
 		apply_equipped_engine()
-		depot_notice = "%s equipped for the next run." % engine.display_name
+		set_notice("depot_notice", "%s equipped for the next run.", [engine.display_name])
 	else:
 		depot_notice = profile.load_notice if not profile.load_notice.is_empty() else "Purchase this engine before equipping it."
 
 func reset_progression() -> void:
-	if state != "depot":
+	if not ui_screen.is_empty() or state != "depot":
 		return
 	if not reset_profile_pending:
 		reset_profile_pending = true
@@ -178,10 +256,10 @@ func speed_kmh() -> float:
 	return velocity.length() * METERS_PER_WORLD_UNIT * 3.6
 
 func select_gear(gear: int) -> bool:
-	if state not in ["ready", "running"]:
+	if not ui_screen.is_empty() or state not in ["ready", "running"]:
 		return false
 	if not engine.supports_gear(gear):
-		gear_notice = "This engine has %d forward gears. 9 selects reverse." % engine.gear_count()
+		set_notice("gear_notice", "This engine has %d forward gears. 9 selects reverse.", [engine.gear_count()])
 		gear_notice_time = 2.5
 		return false
 	if (gear == 9) != (selected_gear == 9) and velocity.length() >= DOCK_SPEED:
@@ -189,6 +267,8 @@ func select_gear(gear: int) -> bool:
 		gear_notice_time = 2.5
 		return false
 	selected_gear = gear
+	if is_instance_valid(audio):
+		audio.play_event("gear")
 	gear_notice = ""
 	gear_notice_time = 0.0
 	return true
@@ -200,7 +280,11 @@ func river_half_width(y: float) -> float:
 	return 285.0 + sin(-y / 1450.0) * 25.0
 
 func _ready() -> void:
-	profile = Profile.new("user://profile.json", not bool(get_meta("test_mode", false)))
+	var fixture := bool(get_meta("test_mode", false))
+	settings = Settings.new("user://settings.cfg", not fixture)
+	settings.load_settings()
+	Text.set_locale(settings.locale)
+	profile = Profile.new("user://profile.json", not fixture)
 	profile.load_profile()
 	apply_equipped_engine()
 	setup_inputs()
@@ -211,10 +295,17 @@ func _ready() -> void:
 	hud = Hud.new()
 	hud.game = self
 	add_child(hud)
-	audio = AudioStreamPlayer.new()
+	audio = Audio.new()
+	audio.game = self
 	add_child(audio)
+	if not fixture or bool(get_meta("show_frontend", false)):
+		ui_screen = "menu" if settings.language_chosen else "language"
+	front_end = FrontEnd.new()
+	front_end.game = self
+	add_child(front_end)
 	demo = "--demo" in OS.get_cmdline_user_args()
 	if demo:
+		ui_screen = ""
 		start_run()
 		select_gear(2)
 		Engine.time_scale = 8.0
@@ -257,6 +348,8 @@ func build_route() -> void:
 	rocks = rocks.filter(func(rock: Dictionary) -> bool: return absf(rock.pos.y - luma_pos.y) > 450)
 
 func reset_run() -> void:
+	if not ui_screen.is_empty():
+		return
 	boat_pos = Vector2(river_center(0), 0)
 	velocity = Vector2.ZERO
 	camera_y = -520.0
@@ -280,10 +373,12 @@ func reset_run() -> void:
 	unload_notice = ""
 	run_support = 0
 	unload_stop = ""
+	engine_throttle = 0
+	_notice_templates.clear()
 	apply_equipped_engine()
 
 func start_run() -> void:
-	if state != "ready":
+	if not ui_screen.is_empty() or state != "ready":
 		return
 	if not manifest.valid_data() or manifest.completed_count() != 0:
 		gear_notice = "Choose a valid relief load before launch."
@@ -300,6 +395,12 @@ func start_run() -> void:
 		gear_notice_time = 6
 
 func _physics_process(delta: float) -> void:
+	if not ui_screen.is_empty():
+		if Input.is_action_just_pressed("pause_run"):
+			close_screen()
+		return
+	if Engine.get_process_frames() <= _input_guard_until:
+		return
 	gear_notice_time = maxf(0, gear_notice_time - delta)
 	for gear in range(1, 10):
 		if Input.is_action_just_pressed("gear_%d" % gear):
@@ -320,6 +421,7 @@ func _physics_process(delta: float) -> void:
 			close_depot()
 		elif state == "running":
 			state = "paused"
+			engine_throttle = 0
 		elif state == "paused":
 			state = "running"
 	# Independent axes preserve forward speed while steering diagonally.
@@ -333,7 +435,7 @@ func _physics_process(delta: float) -> void:
 		simulate(delta, steering, braking, Input.is_action_pressed("deliver"))
 
 func simulate(delta: float, steering: Vector2, braking: bool, unloading: bool) -> void:
-	if state != "running":
+	if not ui_screen.is_empty() or state != "running":
 		return
 	elapsed += delta
 	impact_cooldown = maxf(0, impact_cooldown - delta)
@@ -345,6 +447,7 @@ func simulate(delta: float, steering: Vector2, braking: bool, unloading: bool) -
 	var slowing := braking or steering.y > 0
 	if slowing:
 		target = Vector2.ZERO
+	engine_throttle = 0.0 if slowing else throttle
 	var drive_target := target
 	# Current is incorporated once in target ground velocity, never in camera scroll.
 	target += current_at(boat_pos)
@@ -440,24 +543,15 @@ func finish_failure(reason: String) -> void:
 	state = "failure"
 	failure_reason = reason
 	velocity = Vector2.ZERO
+	engine_throttle = 0
 	unload_progress = 0
 	play_tone(160, 0.4)
 
-func play_tone(frequency: float, duration: float) -> void:
-	if not is_instance_valid(audio) or DisplayServer.get_name() == "headless":
+func play_tone(frequency: float, _duration: float) -> void:
+	if not is_instance_valid(audio):
 		return
-	var data := PackedByteArray()
-	var count := int(duration * 22050)
-	data.resize(count * 2)
-	for i in count:
-		var sample := int(sin(TAU * frequency * i / 22050.0) * 6500 * pow(1.0 - float(i) / count, 2))
-		data.encode_s16(i * 2, sample)
-	var stream := AudioStreamWAV.new()
-	stream.format = AudioStreamWAV.FORMAT_16_BITS
-	stream.mix_rate = 22050
-	stream.data = data
-	audio.stream = stream
-	audio.play()
+	var event := {880: "delivery", 660: "refuel", 240: "low_fuel", 110: "collision", 160: "failure"}
+	audio.play_event(event.get(int(frequency), "gear"))
 
 func pilot_controls() -> Array:
 	var target_x := river_center(boat_pos.y - 160)
