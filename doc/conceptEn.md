@@ -83,3 +83,34 @@ Give Codex small, complete tasks: “add current and a test area,” “implemen
 ### Sources in the original
 
 - [Godot: 2D](https://docs.godotengine.org/en/stable/tutorials/2d/index.html)
+
+## Current design additions — November 14, 2026
+
+This section records current direction separately from the historical translated conversation above. The original stage table and feature suggestions are not a binding backlog. The user has accepted the first playable step; the next plan is [secondSteps.md](secondSteps.md). Actual implementation and verification remain recorded in [workbench.md](workbench.md).
+
+### Confirmed controls and engine direction
+
+- Add an actual-speed display so the player can judge cruising, braking and docking.
+- Select starter forward gears with **1** and **2**; **9** selects reverse. **W** accelerates in the selected direction; **S** brakes. Direction changes preserve inertia and require slowing before reversal.
+- Future purchasable engines can offer more forward gears. Reserve 9 for reverse, leaving keys **1–8** for at most eight forward gears. A higher gear count is not a commitment to eight gears in the next milestone.
+- Engine choices should expose speed, acceleration and fuel-use trade-offs. A faster engine need not be best for every delivery; low gears and the starter engine should remain useful.
+
+The immediate foundation is a speedometer, starter gear selection and data-driven engine parameters. A Resource defining an engine is preparation for purchases, not an implemented shop or economy. The second-step plan proposes the smallest complete earn/buy/equip/replay loop after navigation improvements pass review.
+
+### Proposed next playable milestone
+
+Keep a short authored humanitarian run with the existing aid cargo and destination. Add readable currents, a brief rapids section and one fork whose safer and faster passages both work with the starter engine. Use a whirlpool instead of the fork only if it proves a clearer single navigation experiment; do not assume both are required. Follow with one purchasable engine alternative and a small logistics-support reward for completed delivery. Aid is delivered to communities rather than sold to them.
+
+This is a proposed scope with gated playable increments, not a commitment to the original full showcase. Defer drones, rafts, wildlife encounters, pirates, refrigeration, cleanup equipment and campaign systems. Compare real movement, docking, route choices and performance before expanding.
+
+### Additional ideas to consider later
+
+These proposals need playtesting and scope decisions before implementation:
+
+- **River information:** communities provide radio reports, seasonal water-level warnings and safe-channel knowledge. Later reconnaissance improves uncertain information rather than replacing local expertise.
+- **Cargo trade-offs:** payload mass affects acceleration and stopping distance; cold-chain cargo later creates space, power and time choices. Introduce one trade-off at a time.
+- **Community partnerships:** deliveries support locally operated pumps, clinics and radios; partners can maintain markers, advise routes or help repair the boat.
+- **Wildlife avoidance:** reserve space, slow approaches and alternate channels take priority over confrontation. Avoid rewards for harming animals.
+- **Visible consequences:** aid changes a specific service at a landing, while later environmental changes make familiar routes worth reading again. Prefer one meaningful, observable effect to a broad simulation.
+
+Retain navigation and delivery as the core. Each addition should produce a clear player decision or a visible humanitarian result, with performance and readability checked on the actual game.

@@ -44,6 +44,8 @@ func _process(_delta: float) -> bool:
 			key(KEY_QUOTELEFT, true)
 		21: key(KEY_QUOTELEFT, false)
 		25: check(not game.show_fps, "Backtick hides the FPS counter again")
+		26: key(KEY_2, true)
+		27: key(KEY_2, false)
 		30: key(KEY_ENTER, true)
 		31: key(KEY_ENTER, false)
 		32:
@@ -70,11 +72,20 @@ func _process(_delta: float) -> bool:
 			capture("input_03_braked")
 		195:
 			key(KEY_SPACE, false)
-			key(KEY_S, true)
+			key(KEY_9, true)
+			key(KEY_W, true)
+		196: key(KEY_9, false)
 		230:
-			check(game.velocity.y > 80, "S reverses south for overshoot recovery")
+			check(game.velocity.y > 80 and game.selected_gear == 9, "9 selects reverse and W drives south")
 			capture("input_04_reverse")
-		235: key(KEY_S, false)
+		235:
+			key(KEY_W, false)
+			key(KEY_S, true)
+		245:
+			check(game.velocity.length() < 1, "S brakes without driving in reverse")
+			key(KEY_S, false)
+			key(KEY_2, true)
+		246: key(KEY_2, false)
 		250:
 			game.boat_pos = game.rocks[0].pos + Vector2(0, 95)
 			game.velocity = Vector2(0, -155)

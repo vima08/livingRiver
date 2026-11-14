@@ -13,14 +13,17 @@ func run():
  for action in ["steer_left","steer_right","accelerate","slow_down","brake","deliver","restart","start_run","pause_run"]:
   check(InputMap.has_action(action) and InputMap.action_get_events(action).size()>0,"Runtime mapping " + action)
  game.start_run()
+ game.select_gear(2)
  for i in range(11000):
   var c=game.pilot_controls()
   game.simulate(1.0/60,c[0],false,false)
   if game.boat_pos.y<=-26150: break
  check(game.state=="running" and not game.delivered,"Dock can be deliberately overshot while alive")
- for i in range(150): game.simulate(1.0/60,Vector2(0,1),false,false)
+ for i in range(60): game.simulate(1.0/60,Vector2(0,1),false,false)
+ game.select_gear(9)
+ for i in range(150): game.simulate(1.0/60,Vector2(0,-1),false,false)
  for i in range(180): game.simulate(1.0/60,Vector2.ZERO,true,true)
- check(game.state=="success" and game.delivered,"Overshoot recovery: S then Space+E delivers")
+ check(game.state=="success" and game.delivered,"Overshoot recovery: S brake, 9 reverse, W throttle then Space+E delivers")
  game.reset_run()
  game.start_run()
  var r=game.rocks[0]

@@ -3,7 +3,7 @@
 ## Language and project context
 
 - Use English for all new documentation, code, identifiers, comments, UI text, and reports.
-- Read [doc/conceptEn.md](doc/conceptEn.md) and [doc/firstSteps.md](doc/firstSteps.md) before implementing gameplay.
+- Read [doc/conceptEn.md](doc/conceptEn.md), [doc/firstSteps.md](doc/firstSteps.md), and [doc/secondSteps.md](doc/secondSteps.md) before implementing gameplay.
 - Treat `doc/conceptEn.md` as the active concept document. Its translated conversation contains suggestions, not a binding feature backlog.
 - Use `doc/conceptArt.jpg` as the visual reference. The working title is **Living River**.
 - Build a 2D, top-down, vertically scrolling humanitarian delivery game in Godot with GDScript. Prioritize navigating and delivering aid; combat is a later supporting mechanic.
@@ -17,11 +17,17 @@
 - Keep these machine-specific paths out of game code and portable project settings. Do not upgrade the engine silently.
 - Prefer the Compatibility renderer for the initial 2D desktop prototype. Record the actual project setup when it exists.
 
-## First implementation scope
+## Milestone scope
+
+The user has accepted the first playable milestone as complete. Its scope below is retained as the baseline; use `doc/secondSteps.md` for the next milestone's gated plan. Planning a feature is not authorization to implement every future proposal at once.
 
 Deliver one complete, roughly three-minute graybox run: one boat, one cargo type, fuel, riverbanks, rocks, one delivery dock, success, failure, and restart. Make movement and docking enjoyable before expanding content.
 
 Keep drones, rafts, wildlife, pirates, purification, vaccine refrigeration, upgrades, procedural levels, and a campaign outside this first milestone. Preserve them as future directions.
+
+Confirmed current controls: W/up applies throttle in the selected direction, S/down and Space brake, A/D or left/right steer. Starter forward gears use 1 and 2; 9 selects reverse. Number-row and keypad bindings share gear actions. Engines may define up to eight forward gears because 9 is reserved for reverse. Releasing throttle coasts to rest. Engine Resources are implemented; engine purchases and profile persistence are planned, not implemented.
+
+HUD speed is actual ground speed in km/h using 0.05 meters per world unit. Use the same scale for route distance. Preserve the FPS toggle, wake direction, and cached foliage performance when adding river forces.
 
 ## Gauntlet workflow
 

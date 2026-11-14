@@ -50,11 +50,20 @@ class HudCanvas extends Control:
 		resource(515, "FUEL", game.fuel, orange if game.fuel > 22 else Color("ef735d"))
 		text(Vector2(750, 39), "AID CARGO", 12, mint)
 		text(Vector2(750, 59), "Delivered" if game.delivered else "01  /  Water filters", 17)
-		var remaining: float = maxf(0, game.ROUTE_LENGTH + game.boat_pos.y)
+		var remaining: float = maxf(0, game.ROUTE_LENGTH + game.boat_pos.y) * game.METERS_PER_WORLD_UNIT
 		text(Vector2(1020, 39), "KOYA LANDING", 12, mint)
 		text(Vector2(1020, 59), "%0.1f km  /  %02d:%02d" % [remaining / 1000, int(game.elapsed) / 60, int(game.elapsed) % 60], 16)
 		box(Rect2(22, 660, 1236, 42), Color(0.035, 0.12, 0.11, 0.96), 10)
-		text(Vector2(40, 686), "A D / arrows  Steer   W  Forward   S  Reverse   SPACE  Brake   Hold E  Unload   R  Restart   ESC  Pause   `  FPS", 14)
+		text(Vector2(40, 686), "A D  Steer   W  Throttle   S / SPACE  Brake   1-%d  Forward gears   9  Reverse   Hold E  Unload   R  Restart   ESC  Pause   `  FPS" % game.engine.gear_count(), 13)
+		box(Rect2(22, 91, 216, 92), ink, 10)
+		text(Vector2(38, 112), "SPEED / GEAR", 11, mint)
+		text(Vector2(38, 145), "%02.0f" % game.speed_kmh(), 30)
+		text(Vector2(84, 143), "km/h", 14, mint)
+		text(Vector2(165, 145), "R" if game.selected_gear == 9 else str(game.selected_gear), 30, orange)
+		text(Vector2(38, 168), "%s  |  %d + R" % [game.engine.display_name, game.engine.gear_count()], 12)
+		if game.gear_notice_time > 0:
+			box(Rect2(280, 140, 720, 32), ink, 8)
+			text(Vector2(296, 162), game.gear_notice, 14, orange)
 		if game.show_fps:
 			box(Rect2(1142, 88, 116, 34), ink, 8)
 			text(Vector2(1153, 111), "%d FPS" % Engine.get_frames_per_second(), 18, mint)
@@ -65,7 +74,7 @@ class HudCanvas extends Control:
 			elif game.boat_pos.distance_to(game.dock_pos) < 600:
 				message = "KOYA LANDING  /  Enter the marked circle. Hold SPACE to stop."
 				if game.boat_pos.distance_to(game.dock_pos) < 95:
-					message = "HOLD E TO UNLOAD  /  Keep SPACE held" if game.can_deliver() else "BRAKE TO UNLOAD  /  Hold SPACE until speed is below 45"
+					message = "HOLD E TO UNLOAD  /  Keep SPACE held" if game.can_deliver() else "BRAKE TO UNLOAD  /  Hold S or SPACE until speed is below 8 km/h"
 			elif game.fuel < 22:
 				message = "LOW FUEL  /  Conserve your route. Watch for the refuel buoy."
 			box(Rect2(280, 94, 720, 36), Color(0.035, 0.12, 0.11, 0.88), 8)
@@ -77,8 +86,8 @@ class HudCanvas extends Control:
 		var title := "A river. A lifeline."
 		var eyebrow := "LIVING RIVER  /  FIRST RELIEF RUN"
 		var lines: Array[String] = [
-			"Bring water filters to Koya Landing, 26 km upriver.",
-			"Hold W to accelerate. A/D steer. Hold S to reverse.",
+			"Bring water filters to Koya Landing, 1.3 km upriver.",
+			"1-%d: forward gears. 9: reverse. W: throttle. S: brake." % game.engine.gear_count(),
 			"Collect the orange refuel buoy halfway along the route.",
 			"At the dock: hold SPACE to stop, then hold E to unload."
 		]
@@ -96,7 +105,7 @@ class HudCanvas extends Control:
 		elif game.state == "paused":
 			eyebrow = "RIVER LOG  /  PAUSED"
 			title = "Take a breath."
-			lines = ["Your boat and resources are paused.", "A / D or arrows: steer. Hold W: forward. S: reverse.", "SPACE: brake. Hold E inside the dock circle to unload.", "R restarts the run. Backtick toggles the FPS counter."]
+			lines = ["Your boat and resources are paused.", "1-%d: forward gears. 9: reverse. W: throttle. S: brake." % game.engine.gear_count(), "SPACE: brake. Hold E inside the dock circle to unload.", "R restarts the run. Backtick toggles the FPS counter."]
 			action = "ESC  /  Continue upriver"
 		# Leave the landing visible to the left on completion.
 		var origin := Vector2(340, 205)

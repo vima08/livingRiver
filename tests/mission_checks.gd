@@ -17,6 +17,7 @@ func run() -> void:
 	root.add_child(game)
 	game.set_physics_process(false)
 	game.start_run()
+	game.select_gear(2)
 	# Exercise a full route through the real simulation, using visible center water.
 	for frame in range(60 * 230):
 		var controls: Array = game.pilot_controls()
@@ -40,7 +41,7 @@ func run() -> void:
 	check(game.boat_pos == Vector2(640, 0) and game.velocity == Vector2.ZERO, "No automatic movement without throttle")
 	for i in range(120):
 		game.simulate(1.0 / 60, Vector2(0, -1), false, false)
-	check(game.boat_pos.y < -200 and game.velocity.y == -155, "W-equivalent throttle accelerates north")
+	check(game.boat_pos.y < -140 and game.velocity.y == -game.engine.speed_for(1), "W-equivalent throttle accelerates north in first gear")
 	for i in range(120):
 		game.simulate(1.0 / 60, Vector2.ZERO, false, false)
 	check(game.velocity == Vector2.ZERO, "Releasing throttle coasts to rest")

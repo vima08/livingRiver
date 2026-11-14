@@ -1,5 +1,29 @@
 # Living River workbench
 
+## Current status — first step accepted; second step planned
+
+The user accepted the first playable milestone as complete. [secondSteps.md](secondSteps.md) is the next plan: readable currents and rapids, one meaningful fork, then a small delivery-support / engine-purchase / replay loop. These systems are planned, not implemented in this update. [conceptEn.md](conceptEn.md) now separately records confirmed engine direction and optional community-information, cargo, partnership and environmental ideas.
+
+### Implemented foundation — speedometer and starter gearbox
+
+- Actual ground-speed HUD in km/h, selected gear, engine name and gear count.
+- Starter River Twin engine: two forward gears (95 and 155 world units/s) plus reverse (100). Starts in first; select second for the main delivery run.
+- Confirmed controls: number-row or keypad **1/2** select forward gears, **9** reverse; **W/up** applies throttle, **S/down** or Space brakes, A/D or left/right steers. Keys 3–8 report unavailable gears on this engine. Releasing throttle coasts to rest.
+- Direction changes require speed below 45 world units/s (about 8 km/h); forward-to-forward shifts remain available while moving. Invalid selection and unsafe changes preserve the current gear and show feedback.
+- `scripts/boat_engine.gd` and `resources/engines/river_twin.tres` define the starter without engine-specific movement code. A test-only three-gear Resource proves additional gears; no purchase/profile UI or unlocked upgraded engine is claimed.
+- World scale is now documented as **0.05 meters per world unit**. Speed uses actual velocity magnitude, including lateral travel. Route distance was corrected from unscaled 26 km to **1.3 km**, preserving geometry and approximately three-minute timing.
+- Independent critic identified phantom speed at the route's longitudinal clamps. Clamping now clears blocked longitudinal velocity, so stationary boundary contact reports zero, stops the wake and permits gear recovery. Added start/far-boundary regressions.
+- README, briefing, pause screen, footer and agent instructions describe the new controls. Historical notes below retain previous implementation rounds.
+
+### Latest checks and review
+
+- Starter gearbox suite: **19/19 PASS**, including both boundary stops and direction recovery; fresh critic independently reran all 19 checks.
+- Mission suite: **20/20 PASS** after boundary correction; complete run remains 169.90 simulated seconds in second gear, hull100/fuel23.2.
+- Critic regression suite: **15/15 PASS** with updated explicit brake / 9 / W recovery controls.
+- Graphical key playback: **16/16 PASS**, exit 0. Current input frames show readable speed/gear panel, correct 1.3 km briefing, gear2 travel and gearR reverse. The visual test stages later scenarios explicitly and does not measure a full route.
+- Fresh critic verdict **PASS for starter gears, speedometer and second-step planning**, recorded at `doc/evidence/gears-plan-review.md`. Initial REWORK for the boundary mismatch is preserved with the fix and independent recheck. Graphical captures were inspected at 1280 × 720.
+- Known sandbox certificate-store warning persists. Human enjoyment and long-run performance of future milestone systems are not inferred from these checks.
+
 ## Latest update — manual controls, FPS counter, and renderer performance
 
 User feedback: poor performance, wake stays at stern during reverse, and preference for manual acceleration instead of automatic cruising. Implemented W/up to accelerate north, S/down to slow then reverse, A/D or left/right to steer. With no throttle the boat coasts to rest. This interprets the user's ambiguous “steer on S” as slowing/reversing; the interpretation was disclosed in the progress update.
@@ -33,7 +57,7 @@ These are short local uncapped measurements, not a sustained-performance guarant
 
 Commands: `--path . --script tests/render_benchmark.gd -- --baseline` and `--path . --script tests/render_benchmark.gd`. Local reports are under `tmp/benchmark_*.txt`; screenshots are `doc/evidence/performance_baseline.png` and `performance_cached.png`. Review media remains ignored according to the user's existing `evidence/` rule. The earlier `handling.avi` is historical evidence for the original controls; it was not regenerated for this update. Current screenshots, input checks, and scoped critic review supersede it for the revised controls.
 
-## Active milestone
+## Historical first-milestone implementation
 
 First playable three-minute humanitarian delivery run. Implementation started November 14, 2026. Acceptance criteria: [firstSteps.md](firstSteps.md). Reference: [conceptArt.jpg](conceptArt.jpg).
 
@@ -43,7 +67,7 @@ First playable three-minute humanitarian delivery run. Implementation started No
 - Separate visual builder: original procedural river, foliage, boat, hazards, and village.
 - Toolchain: verified Godot 4.7.2, GDScript, Compatibility renderer, 1280 × 720.
 - Planned evidence: import and launch output, automated scenario results, graphical captures, independent functional and visual reviews.
-- Status: **playable build implemented; independent functional PASS and visual-readability PASS**. Graphical input playback passes 11/11 checks. Complete milestone acceptance remains open for human handling review.
+- Status: **accepted by the user as complete** after independent functional and visual-readability passes and subsequent control/performance refinements. The following evidence describes the original build; latest behavior and checks are recorded above.
 - Actual route result: **169.90 simulated seconds**, full hull, 23.2 fuel, midpoint buoy collected. Scripted navigation through the real simulation, not a human playthrough.
 
 ## Artifacts
@@ -99,8 +123,8 @@ Create those temporary directories before using the sandbox environment override
 - `evidence/demo_00.png`–`demo_04.png`: accelerated full-route snapshots from the earlier integrated build.
 - `evidence/input_00_briefing.png`–`input_11_hull_failure.png`: updated normal-speed input scenarios; include turn reversal, brake, reverse, collision, docking, success, restart, and both failures.
 
-## Remaining verification
+## Historical verification limits
 
 The automated route and recorded keyboard playback establish working controls, traversability, timing, docking and outcomes. They do not establish whether a new human player enjoys steering or completes the route on a first attempt. Human playtesting and target-device performance testing remain limitations. Keep final milestone approval separate from the scoped functional/visual evidence until independent review is complete.
 
-Next meaningful review: a human keyboard playthrough of the unmodified full route, including a deliberately missed dock and recovery using S/down. Reviewers inspected the rendered scenario frames but did not play the AVI, hear audio, or perform that human run. These limits are preserved rather than treating independent scoped passes as complete approval. The playable project and reproducible evidence are ready for this review.
+The user subsequently accepted the first playable step and approved planning the second. Historical reviewers inspected rendered scenario frames but did not play the AVI, hear audio, or perform a human run. Preserve those evidence limits while treating the first step as accepted. Current missed-dock recovery uses S to brake, 9 to select reverse, then W to move south; the earlier S-only reverse controls were superseded.

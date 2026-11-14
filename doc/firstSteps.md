@@ -1,5 +1,7 @@
 # Living River — first steps
 
+Status: **accepted by the user as complete**. This document retains the original first-step plan and historical evidence. Current work follows [secondSteps.md](secondSteps.md); actual controls and measurements are in [workbench.md](workbench.md).
+
 ## Goal and current state
 
 Build a 2D top-down river adventure in Godot where steering a relief boat and delivering aid are enjoyable before adding more systems.
@@ -67,7 +69,7 @@ Exit evidence: a full run, its measured duration, a screenshot at the intended v
 
 ## Milestone acceptance checklist
 
-Evidence status: checked items are supported by scripted simulation, graphical input playback, and independent functional/visual reviews recorded in [workbench.md](workbench.md). The route takes **169.90 simulated seconds**. Human handling enjoyment and first-play success have not been verified; the final complete-milestone approval remains open.
+Evidence status: checked items are supported by scripted simulation, graphical input playback, and independent functional/visual reviews recorded in [workbench.md](workbench.md). The route takes **169.90 simulated seconds**. The user subsequently accepted this first step as complete. Earlier automated evidence does not establish first-play success for other players or sustained performance across devices.
 
 - [x] A clean import and launch produce no script or missing-resource errors.
 - [x] The player can identify steering, braking, delivery, and restart controls without reading source code.
@@ -81,7 +83,7 @@ Evidence status: checked items are supported by scripted simulation, graphical i
 - [x] Restart restores position, velocity, camera, resources, pickups, delivery status, village feedback, and HUD.
 - [x] A full successful run lasts roughly three minutes; record the measured result and explain substantial deviation.
 - [x] Boat, navigable water, obstacles, dock, and HUD remain distinct at the target resolution.
-- [ ] An independent critic inspected actual evidence and passed the milestone. List anything they could not verify.
+- [x] An independent critic inspected actual evidence and passed the milestone. List anything they could not verify. Scoped functional and visual reviews passed; the user subsequently accepted the playable first step. Earlier scripted-play and sustained-performance limitations remain historical evidence, not claims of additional testing.
 
 ## Review and iteration
 

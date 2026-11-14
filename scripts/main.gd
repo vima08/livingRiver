@@ -7,6 +7,8 @@ const BOAT_RADIUS := 18.0
 const BOAT_HALF_AXIS := 17.0
 const DOCK_SPEED := 45.0
 const UNLOAD_SECONDS := 2.0
+const METERS_PER_WORLD_UNIT := 0.05
+const STARTER_ENGINE = preload("res://resources/engines/river_twin.tres")
 
 var boat_pos := Vector2(640, 0)
 var velocity := Vector2.ZERO
@@ -30,6 +32,29 @@ var low_fuel_warned := false
 var demo := false
 var demo_captures := 0
 var show_fps := false
+var engine: Resource = STARTER_ENGINE
+var selected_gear := 1
+var gear_notice := ""
+var gear_notice_time := 0.0
+
+func speed_kmh() -> float:
+	return velocity.length() * METERS_PER_WORLD_UNIT * 3.6
+
+func select_gear(gear: int) -> bool:
+	if state not in ["ready", "running"]:
+		return false
+	if not engine.supports_gear(gear):
+		gear_notice = "This engine has %d forward gears. 9 selects reverse." % engine.gear_count()
+		gear_notice_time = 2.5
+		return false
+	if (gear == 9) != (selected_gear == 9) and velocity.length() >= DOCK_SPEED:
+		gear_notice = "Brake below 8 km/h before changing direction."
+		gear_notice_time = 2.5
+		return false
+	selected_gear = gear
+	gear_notice = ""
+	gear_notice_time = 0.0
+	return true
 
 func river_center(y: float) -> float:
 	return 640.0 + sin(-y / 2300.0) * 115.0 + sin(-y / 780.0) * 28.0
@@ -51,6 +76,7 @@ func _ready() -> void:
 	demo = "--demo" in OS.get_cmdline_user_args()
 	if demo:
 		start_run()
+		select_gear(2)
 		Engine.time_scale = 8.0
 
 func setup_inputs() -> void:
@@ -61,6 +87,8 @@ func setup_inputs() -> void:
 		"start_run": [KEY_ENTER], "pause_run": [KEY_ESCAPE],
 		"toggle_fps": [KEY_QUOTELEFT]
 	}
+	for gear in range(1, 10):
+		bindings["gear_%d" % gear] = [KEY_0 + gear, KEY_KP_0 + gear]
 	for action: String in bindings:
 		if not InputMap.has_action(action):
 			InputMap.add_action(action)
@@ -95,11 +123,18 @@ func reset_run() -> void:
 	impact_cooldown = 0.0
 	impact_flash = 0.0
 	low_fuel_warned = false
+	selected_gear = 1
+	gear_notice = ""
+	gear_notice_time = 0
 
 func start_run() -> void:
 	state = "running"
 
 func _physics_process(delta: float) -> void:
+	gear_notice_time = maxf(0, gear_notice_time - delta)
+	for gear in range(1, 10):
+		if Input.is_action_just_pressed("gear_%d" % gear):
+			select_gear(gear)
 	if Input.is_action_just_pressed("toggle_fps"):
 		show_fps = not show_fps
 	if Input.is_action_just_pressed("restart"):
@@ -119,7 +154,8 @@ func _physics_process(delta: float) -> void:
 		simulate(delta, controls[0], controls[1], controls[2])
 		capture_demo()
 	else:
-		simulate(delta, steering, Input.is_action_pressed("brake"), Input.is_action_pressed("deliver"))
+		var braking := Input.is_action_pressed("brake") or Input.is_action_pressed("slow_down")
+		simulate(delta, steering, braking, Input.is_action_pressed("deliver"))
 
 func simulate(delta: float, steering: Vector2, braking: bool, unloading: bool) -> void:
 	if state != "running":
@@ -127,14 +163,21 @@ func simulate(delta: float, steering: Vector2, braking: bool, unloading: bool) -
 	elapsed += delta
 	impact_cooldown = maxf(0, impact_cooldown - delta)
 	impact_flash = maxf(0, impact_flash - delta * 2.5)
-	var north_speed := steering.y * (155.0 if steering.y < 0 else 100.0)
+	var throttle := maxf(0, -steering.y)
+	var direction := 1.0 if selected_gear == 9 else -1.0
+	var north_speed: float = direction * throttle * engine.speed_for(selected_gear)
 	var target := Vector2(steering.x * 205, north_speed)
-	if braking:
+	var slowing := braking or steering.y > 0
+	if slowing:
 		target = Vector2.ZERO
-	# Releasing throttle coasts to rest; W/S are required to drive the boat.
-	velocity = velocity.move_toward(target, (390.0 if braking else 210.0) * delta)
+	# W drives the selected gear; S and Space brake. Release W to coast to rest.
+	var acceleration: float = engine.acceleration_for(selected_gear)
+	velocity = velocity.move_toward(target, (390.0 if slowing else acceleration) * delta)
 	boat_pos += velocity * delta
-	boat_pos.y = clampf(boat_pos.y, -ROUTE_LENGTH - 150, 90)
+	var bounded_y := clampf(boat_pos.y, -ROUTE_LENGTH - 150, 90)
+	if bounded_y != boat_pos.y:
+		boat_pos.y = bounded_y
+		velocity.y = 0.0
 	resolve_collisions()
 	camera_y = boat_pos.y - 520
 	fuel = maxf(0, fuel - delta * (0.55 + velocity.length() * 0.0008))
