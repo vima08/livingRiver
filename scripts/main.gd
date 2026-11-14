@@ -11,6 +11,7 @@ const METERS_PER_WORLD_UNIT := 0.05
 const STARTER_ENGINE = preload("res://resources/engines/river_twin.tres")
 const UPGRADE_ENGINE = preload("res://resources/engines/river_triple.tres")
 const Profile = preload("res://scripts/player_profile.gd")
+const Manifest = preload("res://scripts/relief_manifest.gd")
 
 var boat_pos := Vector2(640, 0)
 var velocity := Vector2.ZERO
@@ -45,6 +46,61 @@ var depot_return_state := "ready"
 var depot_notice := ""
 var reset_profile_pending := false
 var pilot_branch := "safe"
+var load_preset := "light"
+var manifest: RefCounted = Manifest.new()
+var luma_pos := Vector2.ZERO
+var unload_notice := ""
+var run_support := 0
+var unload_stop := ""
+var pilot_skip_luma := false
+
+func select_load(preset: String) -> bool:
+	if state != "ready" or preset not in ["light", "full"]:
+		return false
+	load_preset = preset
+	manifest.configure(preset)
+	return true
+
+func completed_order(id: String) -> bool:
+	return manifest.completed_order(id)
+
+func nearby_stop() -> String:
+	if boat_pos.distance_to(luma_pos) < 95:
+		return "luma"
+	if boat_pos.distance_to(dock_pos) < 95:
+		return "koya"
+	return ""
+
+func next_stop_position() -> Vector2:
+	var order: Dictionary = manifest.next_order()
+	return luma_pos if not order.is_empty() and order.stop == "luma" else dock_pos
+
+func complete_order(stop: String) -> bool:
+	if state != "running" or nearby_stop() != stop or velocity.length() >= DOCK_SPEED:
+		return false
+	var order: Dictionary = manifest.pending_for_stop(stop)
+	if order.is_empty():
+		return false
+	# A failed launch-save can be retried safely when storage is available again.
+	if mission_id == 0:
+		mission_id = profile.begin_mission()
+	var committed: bool = profile.has_receipt(mission_id, order.id)
+	if not committed:
+		committed = profile.award_order(mission_id, order.id)
+	if not committed:
+		unload_notice = "Delivery not saved. Cargo retained. Hold E to retry. " + profile.load_notice
+		return false
+	manifest.mark_completed(order.id)
+	run_support = manifest.earned_support()
+	reward_received = run_support > 0
+	unload_notice = "%s delivered to %s. +%d support saved." % [order.cargo, order.recipient, order.reward]
+	unload_progress = 0
+	play_tone(880, 0.35)
+	if stop == "koya" or manifest.completed_count() == manifest.total_count():
+		delivered = manifest.completed_count() == manifest.total_count()
+		state = "success" if delivered else "partial"
+		velocity = Vector2.ZERO
+	return true
 
 func apply_equipped_engine() -> void:
 	engine = UPGRADE_ENGINE if profile.equipped == "river_triple" else STARTER_ENGINE
@@ -53,7 +109,7 @@ func apply_equipped_engine() -> void:
 	selected_gear = 1
 
 func open_depot() -> void:
-	if state not in ["ready", "success", "failure"]:
+	if state not in ["ready", "success", "partial", "failure"]:
 		return
 	depot_return_state = state
 	state = "depot"
@@ -95,6 +151,7 @@ func reset_progression() -> void:
 		# Terminal delivery state cannot issue another reward after a reset.
 		mission_id = 0
 		reward_received = false
+		run_support = 0
 	else:
 		depot_notice = profile.load_notice
 	reset_profile_pending = false
@@ -195,6 +252,9 @@ func build_route() -> void:
 		rocks.append({"pos": Vector2(river_center(y) + river_half_width(y) - 30, y), "radius": 28.0})
 	fuel_pickup = Vector2(river_center(-12400), -12400)
 	dock_pos = Vector2(river_center(-ROUTE_LENGTH) + river_half_width(-ROUTE_LENGTH) - 105, -ROUTE_LENGTH)
+	luma_pos = Vector2(river_center(-14500) - river_half_width(-14500) + 105, -14500)
+	# Still-water room for Luma's approach, matching the visible dock clearing.
+	rocks = rocks.filter(func(rock: Dictionary) -> bool: return absf(rock.pos.y - luma_pos.y) > 450)
 
 func reset_run() -> void:
 	boat_pos = Vector2(river_center(0), 0)
@@ -216,10 +276,18 @@ func reset_run() -> void:
 	gear_notice_time = 0
 	mission_id = 0
 	reward_received = false
+	manifest.configure(load_preset)
+	unload_notice = ""
+	run_support = 0
+	unload_stop = ""
 	apply_equipped_engine()
 
 func start_run() -> void:
 	if state != "ready":
+		return
+	if not manifest.valid_data() or manifest.completed_count() != 0:
+		gear_notice = "Choose a valid relief load before launch."
+		gear_notice_time = 4
 		return
 	var briefing_gear := selected_gear
 	apply_equipped_engine()
@@ -228,7 +296,7 @@ func start_run() -> void:
 	mission_id = profile.begin_mission()
 	state = "running"
 	if mission_id == 0:
-		gear_notice = "Profile cannot be saved. Practice run: rewards disabled."
+		gear_notice = "Profile cannot be saved yet. Delivery will retry saving."
 		gear_notice_time = 6
 
 func _physics_process(delta: float) -> void:
@@ -245,7 +313,6 @@ func _physics_process(delta: float) -> void:
 			open_depot()
 	if Input.is_action_just_pressed("restart"):
 		reset_run()
-		start_run()
 	if Input.is_action_just_pressed("start_run") and state == "ready":
 		start_run()
 	if Input.is_action_just_pressed("pause_run"):
@@ -283,7 +350,10 @@ func simulate(delta: float, steering: Vector2, braking: bool, unloading: bool) -
 	target += current_at(boat_pos)
 	# W drives the selected gear; S and Space brake. Release W to coast to rest.
 	var acceleration: float = engine.acceleration_for(selected_gear)
-	velocity = velocity.move_toward(target, (390.0 if slowing else acceleration) * delta)
+	var heavy: bool = manifest.full_load()
+	acceleration *= 0.8 if heavy else 1.0
+	var deceleration := 390.0 * (0.85 if heavy else 1.0)
+	velocity = velocity.move_toward(target, (deceleration if slowing else acceleration) * delta)
 	boat_pos += velocity * delta
 	var bounded_y := clampf(boat_pos.y, -ROUTE_LENGTH - 150, 90)
 	if bounded_y != boat_pos.y:
@@ -305,19 +375,24 @@ func simulate(delta: float, steering: Vector2, braking: bool, unloading: bool) -
 	if hull <= 0:
 		finish_failure("Hull damaged. The relief crew is safe; take a wider line.")
 		return
+	var stop := nearby_stop()
+	if stop != unload_stop:
+		unload_progress = 0
+		unload_stop = stop
+		unload_notice = ""
 	if can_deliver() and unloading:
 		unload_progress = minf(UNLOAD_SECONDS, unload_progress + delta)
 		if unload_progress >= UNLOAD_SECONDS:
-			delivered = true
-			state = "success"
-			velocity = Vector2.ZERO
-			reward_received = profile.award_delivery(mission_id)
-			play_tone(880, 0.45)
+			complete_order(stop)
+			unload_progress = 0
 	else:
 		unload_progress = 0
+		var already_delivered := completed_order("luma_food" if stop == "luma" else "koya_filters")
+		if unloading and not stop.is_empty() and manifest.pending_for_stop(stop).is_empty() and not already_delivered:
+			unload_notice = "No matching cargo for this landing. Continue to the next request."
 
 func can_deliver() -> bool:
-	return state == "running" and boat_pos.distance_to(dock_pos) < 95 and velocity.length() < DOCK_SPEED
+	return state == "running" and not manifest.pending_for_stop(nearby_stop()).is_empty() and velocity.length() < DOCK_SPEED
 
 func resolve_collisions() -> void:
 	# A narrow capsule follows the hull rather than an oversized bounding circle.
@@ -398,10 +473,13 @@ func pilot_controls() -> Array:
 		target_x = river_center(boat_pos.y - 160) + (185.0 if pilot_branch == "rapids" else -155.0)
 	if not pickup_taken and absf(boat_pos.y - fuel_pickup.y) < 450:
 		target_x = fuel_pickup.x
+	var visit_luma := load_preset == "full" and not completed_order("luma_food") and not pilot_skip_luma
+	if visit_luma and absf(boat_pos.y - luma_pos.y) < 600:
+		target_x = luma_pos.x
 	if boat_pos.y < -ROUTE_LENGTH + 450:
 		target_x = dock_pos.x
 	var horizontal := clampf((target_x - boat_pos.x) * 0.025 - velocity.x * 0.004, -1, 1)
-	var near_dock := boat_pos.distance_to(dock_pos) < 80
+	var near_dock := boat_pos.distance_to(dock_pos) < 80 or (visit_luma and boat_pos.distance_to(luma_pos) < 75)
 	return [Vector2(horizontal, -1), near_dock, near_dock]
 
 func capture_demo() -> void:

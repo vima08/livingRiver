@@ -3,7 +3,7 @@
 ## Language and project context
 
 - Use English for all new documentation, code, identifiers, comments, UI text, and reports.
-- Read [doc/conceptEn.md](doc/conceptEn.md), [doc/firstSteps.md](doc/firstSteps.md), and [doc/secondSteps.md](doc/secondSteps.md) before implementing gameplay.
+- Read [doc/conceptEn.md](doc/conceptEn.md), [doc/firstSteps.md](doc/firstSteps.md), [doc/secondSteps.md](doc/secondSteps.md), and [doc/thirdSteps.md](doc/thirdSteps.md) before implementing gameplay.
 - Treat `doc/conceptEn.md` as the active concept document. Its translated conversation contains suggestions, not a binding feature backlog.
 - Use `doc/conceptArt.jpg` as the visual reference. The working title is **Living River**.
 - Build a 2D, top-down, vertically scrolling humanitarian delivery game in Godot with GDScript. Prioritize navigating and delivering aid; combat is a later supporting mechanic.
@@ -19,7 +19,7 @@
 
 ## Milestone scope
 
-The user has accepted the first playable milestone as complete. Its scope below is retained as the baseline; use `doc/secondSteps.md` for the next milestone's gated plan. Planning a feature is not authorization to implement every future proposal at once.
+Milestones 1 and 2 are complete; their scope below is retained as the baseline. Milestone 3 implements cargo choices, two stops and weight-dependent handling; use `doc/thirdSteps.md` for its acceptance gates and `doc/workbench.md` for actual verification and remaining gaps. Planning a feature is not authorization to implement every future proposal at once.
 
 Deliver one complete, roughly three-minute graybox run: one boat, one cargo type, fuel, riverbanks, rocks, one delivery dock, success, failure, and restart. Make movement and docking enjoyable before expanding content.
 
@@ -30,6 +30,10 @@ Confirmed current controls: W/up applies throttle in the selected direction, S/d
 Milestone 2 implements bounded current zones, one collidable island fork, and a between-run depot (B). A completed delivery grants 100 support credits once; River Triple costs 100, offers three forward gears and 18% higher matched-input fuel use. Credits, ownership and equipment persist locally. R resets run state only; progression reset is a separate confirmed depot action. Buy/equip must remain unavailable during active missions. Use isolated profiles for tests, preserving player progression. Integrated acceptance still requires actual graphical evidence and user handling feedback; consult `doc/workbench.md` for the latest verdict.
 
 HUD speed is actual ground speed in km/h using 0.05 meters per world unit. Use the same scale for route distance. Preserve the FPS toggle, wake direction, and cached foliage performance when adding river forces.
+
+Keep water strokes batched and palm fronds cached at startup. Individual antialiased strokes/frond lines caused hundreds of draw calls across the entire route; November 15 measurements and limits are in `doc/workbench.md`. Compare renderer changes with the same viewport, region and sample path, using frame time and tails as well as average FPS; diagnostic layer removal is not a shipped optimization.
+
+Milestone 3 offers Light (Koya filters, 100 support) and Full relief (Luma food, 60; then Koya filters, 100). Full cargo reduces acceleration by 20% and braking deceleration by 15% until food arrives. R returns to the briefing; the depot's Plan next run does the same. Cargo locks at launch. Per-order rewards commit before removing cargo; failed saves retain cargo for retry. Version-2 profiles migrate valid version-1 progress and retain bounded receipts for the latest run only. Keep human handling acceptance distinct from automated checks.
 
 ## Gauntlet workflow
 

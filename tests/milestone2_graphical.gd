@@ -61,7 +61,7 @@ func start_case(branch: String, gear: int) -> void:
 
 func finish() -> void:
 	var report := "# Milestone 2 graphical evidence\n\n"
-	report += "Normal-speed staged current examples at 30 fps. Later examples teleport explicitly; no full-route claim from this recording.\n\n" if motion else "Three full routes rendered with 24 fixed simulation steps per frame (accelerated). No position/resource staging within a route. Depot purchase/equip/launch uses real mouse events and actual buttons. In-memory test profile, no player save changes. Not a human playtest.\n\n"
+	report += "Normal-speed staged current examples at 30 fps. Later examples teleport explicitly; no full-route claim from this recording.\n\n" if motion else "Three full routes rendered with 24 fixed simulation steps per frame (accelerated). No position/resource staging within a route. Depot purchase/equip/Plan next run uses real mouse events and actual buttons; this historical harness then calls start_run for cast off. Milestone-3 playback separately exercises physical Enter after planning. In-memory test profile, no player save changes. Not a human playtest.\n\n"
 	for result in results:
 		print(result)
 		report += "- " + result + "\n"
@@ -113,7 +113,8 @@ func _process(_delta: float) -> bool:
 		if phase_frames == 50: click(Vector2(690, 539), true)
 		if phase_frames == 51: click(Vector2(690, 539), false)
 		if phase_frames == 60:
-			check(game.state == "running" and game.engine.engine_id == "river_triple", "Real Launch button begins upgraded replay")
+			check(game.state == "ready" and game.engine.engine_id == "river_triple", "Real Plan next run button returns upgraded briefing")
+			game.start_run()
 			start_case("rapids", 3)
 			transition("upgrade_run")
 	elif phase == "upgrade_run_done" and phase_frames == 20:
@@ -128,6 +129,7 @@ func _process(_delta: float) -> bool:
 		if phase_frames == 30: click(Vector2(690, 539), true)
 		if phase_frames == 31: click(Vector2(690, 539), false)
 		if phase_frames == 40:
+			game.start_run()
 			start_case("rapids", 2)
 			transition("rapids")
 	elif phase == "rapids_done" and phase_frames == 20:

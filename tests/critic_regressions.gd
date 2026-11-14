@@ -45,6 +45,6 @@ func run():
  await physics_frame
  Input.action_release("restart")
  game.set_physics_process(false)
- check(game.state=="running" and game.fuel>99 and game.hull==100 and game.elapsed<0.2 and not game.pickup_taken and not game.delivered,"R action restores a new run through actual physics input polling")
+ check(game.state=="ready" and game.fuel==100 and game.hull==100 and game.elapsed==0 and not game.pickup_taken and not game.delivered,"R action returns a clean briefing through actual physics input polling")
  print("Critic failures: ",failures)
  quit(failures)

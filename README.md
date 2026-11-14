@@ -1,10 +1,10 @@
 # Living River
 
-A Godot 4.7.2 river-delivery prototype: bring water filters to Koya Landing, read the current, choose a passage, and use logistics support to improve your engine. The starter-engine route takes about three minutes. Art and sound are generated from original code; no external game assets are required.
+A Godot 4.7.2 river-delivery prototype: choose filters for Koya alone or a heavier relief load with food for Luma too. Read the current, choose a passage, deliver matching aid, and use support to improve your engine. The starter-engine route takes about three minutes. Art and sound are generated from original code; no external game assets are required.
 
 ## Play
 
-Open `project.godot` in Godot **4.7.2** and press **F6** with the main scene open, or **F5** to run the project. Press **Enter** at the mission briefing.
+Open `project.godot` in Godot **4.7.2** and press **F6** with the main scene open, or **F5** to run the project. Choose Light or Full relief in the briefing, then press **Enter** or click **Cast off**.
 
 From PowerShell on this machine:
 
@@ -21,7 +21,7 @@ From PowerShell on this machine:
 | 9 (number row or keypad) | Reverse gear; slow down before changing direction |
 | Space | Brake to a complete stop |
 | Hold E | Unload while stopped inside the dock circle |
-| R | Restart the entire run |
+| R | Return to load selection; keep credits and engines |
 | Escape | Pause / resume |
 | B | Open / close the depot between runs |
 | Backtick / grave accent | Show / hide the FPS counter (hidden on startup) |
@@ -32,9 +32,11 @@ Collect the orange refuel buoy near the midpoint. Stay clear of rocks and the sa
 
 Follow water arrows: current changes actual travel speed and can carry an unpowered boat. Before the island, choose the wider left channel with opposing flow, or the narrower right rapids with assisting flow and bank rocks. Both work with the starter engine. The channels rejoin before the orange refuel buoy. The dock is in still water.
 
-Every successful aid delivery earns **100 support credits**, once. Press **B** in the briefing or after a run to open the depot. **River Triple** costs 100 credits, adds third gear and more top speed, and uses 18% more fuel at matched input. Buy, equip, then launch another run. You can switch back to the owned starter for free. The depot compares the two engines before purchase.
+Light carries filters to Koya for **100 support**. Full relief also carries food to **Luma Landing**, on the left bank after the buoy, for **60 support**. Both aboard means 20% slower acceleration and 15% less braking deceleration; brake earlier. Delivering food restores light handling and continues the run. Missing Luma and unloading at Koya ends with a partial result. Failure keeps already saved delivery rewards; undelivered cargo returns to the depot.
 
-Credits, ownership and equipped engine are saved in Godot's user-data directory as `profile.json`. R restarts only the mission. The depot's separate **Reset progression** button requires a second confirmation click and returns to the starter profile. Invalid saves fall back to the starter; write failures cancel progression transactions and display a notice. Tests use isolated profiles and do not spend your credits.
+Press **B** in the briefing or after a run to open the depot. **River Triple** costs 100 credits, adds third gear and more top speed, and uses 18% more fuel at matched input. Buy, equip, then **Plan next run** to choose cargo. You can switch back to the owned starter for free. The depot compares the two engines before purchase.
+
+Credits, ownership and equipped engine are saved in Godot's user-data directory as `profile.json`. Valid version-1 profiles migrate automatically. R abandons unfinished cargo and returns to a fresh briefing while retaining committed rewards. The depot's separate **Reset progression** button requires a second confirmation click and returns to the starter profile. Invalid saves fall back to the starter; failed reward saves retain cargo and permit unloading retry. Tests use isolated profiles and do not spend your credits.
 
 The starter **River Twin** and alternative **River Triple** are data Resources in `resources/engines/`. Number keys select supported gears; unavailable gears leave the selection unchanged and show a message. Data supports at most eight forward gears, with 9 reserved for reverse. Current speed is ground speed, so assisting flow can exceed the engine's still-water speed range.
 
@@ -52,6 +54,10 @@ Use the console executable above as `$godotExe`:
 & $godotExe --headless --path . --script tests/river_adversarial.gd
 & $godotExe --headless --path . --script tests/profile_checks.gd
 & $godotExe --headless --path . --script tests/profile_adversarial.gd
+& $godotExe --headless --path . --script tests/delivery_checks.gd
+& $godotExe --headless --path . --script tests/order_profile_checks.gd
+& $godotExe --headless --path . --script tests/save_adversarial3.gd
+& $godotExe --headless --path . --script tests/delivery_adversarial3.gd
 ```
 
 `tests/mission_checks.gd` measures the complete route with scripted steering and exercises resource/mission transitions. The independent regression suite covers dock overshoot recovery and real engine restart input. Neither is a human playtest.
@@ -77,4 +83,15 @@ Milestone 2 graphical evidence can be reproduced separately:
 
 The second command explicitly stages later example positions. Neither script is a human playtest. See the workbench for acceptance status, measured route times, performance samples and independent verdicts.
 
-See [the workbench](doc/workbench.md) for exact review status and limitations, [the accepted first-step plan](doc/firstSteps.md), [the second-step plan](doc/secondSteps.md), and [the concept](doc/conceptEn.md) for future directions. Art is intentionally a readable procedural prototype rather than finished painted artwork.
+Third-milestone evidence separates a complete accelerated full-load route from normal-speed staged physical input and dock approaches:
+
+```powershell
+& $godotExe --path . --script tests/milestone3_graphical.gd --fixed-fps 30 --write-movie doc/evidence/step3_route.avi
+& $godotExe --path . --script tests/milestone3_graphical.gd --fixed-fps 30 --write-movie doc/evidence/step3_motion.avi -- --motion
+```
+
+Review media is local ignored evidence. These harnesses use test profiles and do not change player progression.
+
+To measure rendering, use `tests/performance_probe.gd -- --mode=current --long` in a graphical run (uncapped, physics disabled). `tests/performance_route.gd` instead measures a complete real-time scripted Full relief run using the normal window/VSync settings and 60 Hz physics. Run these separately from the editor's game or other benchmark windows. See the workbench for before/after results and remaining frame-time spikes.
+
+See [the workbench](doc/workbench.md) for exact review status and limitations, [the accepted first-step plan](doc/firstSteps.md), [the completed second-step plan](doc/secondSteps.md), [third-step acceptance](doc/thirdSteps.md), and [the concept](doc/conceptEn.md) for future directions. Art is intentionally a readable procedural prototype rather than finished painted artwork.

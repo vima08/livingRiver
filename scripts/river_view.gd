@@ -14,11 +14,15 @@ const CANOPY_TEXTURE_SIZE := 128.0
 var canopy_textures: Array[Texture2D] = []
 var rounded_boxes: Dictionary = {}
 var current_textures: Array[Texture2D] = []
+var palm_fronds: Texture2D
 var island_land := PackedVector2Array()
 var island_left := PackedVector2Array()
 var island_right := PackedVector2Array()
+var water_strokes := PackedVector2Array()
+var water_glints := PackedVector2Array()
 
 func _ready() -> void:
+	palm_fronds = _make_palm_texture()
 	# Rasterize the original leaf geometry once, then batch textured trees while scrolling.
 	for variant in range(CANOPY_VARIANTS):
 		canopy_textures.append(_make_canopy_texture(float(variant) * 3.71))
@@ -54,6 +58,24 @@ func _make_canopy_texture(seed_value: float) -> Texture2D:
 		push_error("Could not rasterize canopy: %s" % error_string(error))
 	return ImageTexture.create_from_image(image)
 
+func _make_palm_texture() -> Texture2D:
+	# The original seven fronds are static; rotate their cached image at each crown.
+	var svg := '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="-64 -64 128 128">'
+	for i in range(7):
+		var direction := Vector2.from_angle(float(i) * TAU / 7.0)
+		var perpendicular := direction.orthogonal()
+		var points := "0,0 "
+		for point: Vector2 in [direction * 29.0 + perpendicular * 12.0, direction * 59.0, direction * 27.0 - perpendicular * 7.0]:
+			points += "%.3f,%.3f " % [point.x, point.y]
+		svg += '<polygon points="%s" fill="%s"/>' % [points, "#9bad51" if i % 2 == 0 else "#608a45"]
+		svg += '<path d="M0 0L%.3f %.3f" fill="none" stroke="#b6be69" stroke-width="1"/>' % [direction.x * 59.0, direction.y * 59.0]
+	svg += '</svg>'
+	var image := Image.new()
+	var error := image.load_svg_from_string(svg)
+	if error != OK:
+		push_error("Could not rasterize palm fronds: %s" % error_string(error))
+	return ImageTexture.create_from_image(image)
+
 func _process(_delta: float) -> void:
 	queue_redraw()
 
@@ -77,9 +99,13 @@ func _draw() -> void:
 	if not game.pickup_taken:
 		_draw_fuel(_screen(game.fuel_pickup))
 	_draw_village()
+	_draw_luma()
 	_draw_boat()
 
 func _draw_water() -> void:
+	# Submit disjoint strokes together instead of hundreds of small AA commands.
+	water_strokes.clear()
+	water_glints.clear()
 	var first := int(floor(game.camera_y / 115.0))
 	for row in range(first - 1, first + 9):
 		var world_y := float(row) * 115.0
@@ -91,10 +117,16 @@ func _draw_water() -> void:
 			var y: float = world_y - game.camera_y + _noise(seed_value) * 80.0
 			var length := 22.0 + _noise(seed_value + 2.0) * 58.0
 			var sway := sin(game.elapsed * 1.3 + seed_value) * 4.0
-			var points := PackedVector2Array([Vector2(x, y), Vector2(x + 3.0 + sway, y + length * 0.45), Vector2(x, y + length)])
-			draw_polyline(points, Color(0.42, 0.74, 0.65, 0.15), 2.0, true)
+			var bend := Vector2(x + 3.0 + sway, y + length * 0.45)
+			water_strokes.append(Vector2(x, y))
+			water_strokes.append(bend)
+			water_strokes.append(bend)
+			water_strokes.append(Vector2(x, y + length))
 			if column % 2 == 0:
-				draw_line(Vector2(x + 13, y + 9), Vector2(x + 16, y + 22), Color(0.65, 0.85, 0.72, 0.22), 1.5, true)
+				water_glints.append(Vector2(x + 13, y + 9))
+				water_glints.append(Vector2(x + 16, y + 22))
+	draw_multiline(water_strokes, Color(0.42, 0.74, 0.65, 0.15), 2.0, true)
+	draw_multiline(water_glints, Color(0.65, 0.85, 0.72, 0.22), 1.5, true)
 	_draw_current_marks()
 
 func _draw_current_marks() -> void:
@@ -192,6 +224,8 @@ func _draw_banks() -> void:
 				# Leave the contemporary village clearing open at the final dock.
 				if side > 0 and absf(wy - game.dock_pos.y) < 235.0:
 					continue
+				if side < 0 and absf(wy - game.luma_pos.y) < 235.0:
+					continue
 				_draw_canopy(point, 29.0 + _noise(seed_value + 8) * 21.0, seed_value)
 			if row % 3 == 0:
 				_draw_palm(Vector2(edge_x + side * 67.0, wy - game.camera_y), float(row) + side)
@@ -206,14 +240,9 @@ func _draw_canopy(pos: Vector2, radius: float, seed_value: float) -> void:
 func _draw_palm(pos: Vector2, seed_value: float) -> void:
 	var crown := pos + Vector2(-12, -15)
 	draw_line(pos + Vector2(13, 25), crown, Color("8c8856"), 6.0, true)
-	for i in range(7):
-		var angle := float(i) * TAU / 7.0 + seed_value
-		var direction := Vector2.from_angle(angle)
-		var tip := crown + direction * 59.0
-		var perpendicular := direction.orthogonal()
-		var leaf := PackedVector2Array([crown, crown + direction * 29.0 + perpendicular * 12.0, tip, crown + direction * 27.0 - perpendicular * 7.0])
-		draw_colored_polygon(leaf, Color("9bad51") if i % 2 == 0 else Color("608a45"))
-		draw_line(crown, tip, Color("b6be69"), 1.0, true)
+	draw_set_transform(crown, seed_value)
+	draw_texture_rect(palm_fronds, Rect2(-64, -64, 128, 128), false)
+	draw_set_transform(Vector2.ZERO)
 
 func _draw_rock(pos: Vector2, radius: float) -> void:
 	draw_circle(pos + Vector2(2, 7), radius + 7, Color(0.07, 0.25, 0.24, 0.42))
@@ -269,6 +298,8 @@ func _draw_village() -> void:
 	# Solar-roofed clinic and smaller store; people are active at the landing.
 	_draw_house(Vector2(shore + 92, dock.y - 125), Vector2(105, 76), true)
 	_draw_house(Vector2(shore + 225, dock.y + 85), Vector2(100, 72), false)
+	draw_rect(Rect2(shore + 28, dock.y + 115, 190, 30), INK)
+	draw_string(ThemeDB.fallback_font, Vector2(shore + 39, dock.y + 136), "KOYA LANDING", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, CREAM)
 	var mast := Vector2(shore + 220, dock.y - 108)
 	draw_circle(mast + Vector2(5, 5), 14, Color(0.1, 0.2, 0.13, 0.3))
 	draw_line(mast + Vector2(-12, 7), mast + Vector2(0, -68), CREAM, 3, true)
@@ -280,7 +311,7 @@ func _draw_village() -> void:
 		draw_line(mast + Vector2(width, y), mast + Vector2(-width + 2, y - 16), ORANGE, 2, true)
 	draw_line(mast + Vector2(0, -68), mast + Vector2(0, -82), INK, 2, true)
 	var beacon := mast + Vector2(0, -73)
-	if game.delivered:
+	if game.completed_order("koya_filters"):
 		draw_circle(beacon, 13, Color(0.79, 0.91, 0.5, 0.2))
 		draw_circle(beacon, 5, Color("e3ed9a"))
 		draw_arc(beacon, 19 + sin(game.elapsed * 2.0) * 3, PI * 1.12, PI * 1.88, 14, Color(0.89, 0.96, 0.65, 0.8), 2, true)
@@ -299,9 +330,58 @@ func _draw_village() -> void:
 	draw_circle(pump, 15, Color("667f6a"))
 	draw_line(pump, pump - Vector2(0, 25), Color("384c48"), 6, true)
 	draw_line(pump - Vector2(0, 23), pump - Vector2(13, 23), CREAM, 4, true)
-	if game.delivered:
+	if game.completed_order("koya_filters"):
 		draw_circle(pump - Vector2(0, 28), 7, Color("d3e887"))
 		draw_line(pump - Vector2(13, 20), pump - Vector2(13, 3), Color("98d8c6"), 3, true)
+
+func _draw_luma() -> void:
+	var dock := _screen(game.luma_pos)
+	if dock.y < -300 or dock.y > 1020:
+		return
+	var shore: float = game.river_center(game.luma_pos.y) - game.river_half_width(game.luma_pos.y)
+	var received: bool = game.completed_order("luma_food")
+	draw_style_box(_rounded_box(Color("b8ac77"), 35), Rect2(shore - 430, dock.y - 180, 418, 350))
+	for segment in range(16):
+		var angle := float(segment) * TAU / 16.0
+		draw_arc(dock, 95, angle, angle + 0.23, 4, Color(0.92, 0.79, 0.53, 0.7), 2.5, true)
+	var pier := Rect2(shore - 30, dock.y - 42, dock.x - shore + 5, 84)
+	draw_rect(Rect2(pier.position + Vector2(3, 7), pier.size), Color(0.05, 0.18, 0.16, 0.45))
+	draw_rect(pier, Color("98754c"))
+	for x in range(int(pier.position.x), int(pier.end.x), 13):
+		draw_line(Vector2(x, pier.position.y), Vector2(x, pier.end.y), Color("c2a16b"), 2)
+	for px in [pier.position.x + 4, pier.end.x - 4]:
+		for py in [pier.position.y, pier.end.y]:
+			draw_circle(Vector2(px, py), 5, Color("564a35"))
+	# An open food shelter and striped awning distinguish this receiving team from Koya.
+	var shelter := Vector2(shore - 135, dock.y - 100)
+	_draw_house(shelter, Vector2(142, 92), false)
+	for i in range(7):
+		draw_rect(Rect2(shelter.x - 77 + i * 22, shelter.y + 30, 22, 34), CREAM if i % 2 == 0 else Color("758f5b"))
+	for offset in [-70, 70]:
+		draw_line(shelter + Vector2(offset, 45), shelter + Vector2(offset, 72), INK, 4)
+	draw_rect(Rect2(shelter + Vector2(-72, -13), Vector2(144, 25)), INK)
+	draw_string(ThemeDB.fallback_font, shelter + Vector2(-61, 5), "FOOD SHELTER", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, CREAM)
+	var sign := Vector2(shore - 115, dock.y + 90)
+	draw_rect(Rect2(sign + Vector2(-86, -19), Vector2(172, 32)), INK)
+	draw_string(ThemeDB.fallback_font, sign + Vector2(-72, 3), "LUMA LANDING", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, CREAM)
+	draw_string(ThemeDB.fallback_font, sign + Vector2(-72, 36), "FOOD RECEIVED" if received else "FOOD REQUEST", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, CREAM)
+	# Before arrival the crew prepares an empty receiving table; afterwards crates
+	# sit under the shelter and the team works between its store and the landing.
+	draw_rect(Rect2(shore - 70, dock.y - 18, 42, 31), Color("6e6947"))
+	if received:
+		for i in range(4):
+			var crate := Rect2(shelter.x - 48 + (i % 2) * 35, shelter.y + 22 + int(i / 2) * 24, 29, 21)
+			draw_rect(crate, Color("e0b471"))
+			draw_rect(crate.grow(-3), Color("967647"), false, 1)
+			draw_line(crate.position + Vector2(14, 1), crate.position + Vector2(14, 20), CREAM, 2)
+	for i in range(3):
+		var walk := sin(game.elapsed * 1.6 + i * 2.0) * (13.0 if received else 4.0)
+		var person := Vector2(shore - 45 - i * 29 + walk, dock.y + 12 + (i % 2) * 28)
+		draw_circle(person + Vector2(2, 4), 7, Color(0.18, 0.23, 0.14, 0.3))
+		draw_line(person + Vector2(0, -2), person + Vector2(0, 7), ORANGE if i % 2 == 0 else CREAM, 9, true)
+		draw_circle(person + Vector2(0, -7), 4.5, Color("67472f"))
+		if received and i == 0:
+			draw_rect(Rect2(person + Vector2(-6, -2), Vector2(12, 10)), Color("e0b471"))
 
 func _draw_house(pos: Vector2, size: Vector2, solar: bool) -> void:
 	var rect := Rect2(pos - size * 0.5, size)
@@ -350,9 +430,13 @@ func _draw_boat() -> void:
 	draw_colored_polygon(PackedVector2Array([Vector2(0, -30), Vector2(10, -19), Vector2(13, 5), Vector2(11, 28), Vector2(-11, 28), Vector2(-13, 5), Vector2(-10, -19)]), CREAM)
 	draw_colored_polygon(PackedVector2Array([Vector2(-9, -13), Vector2(9, -13), Vector2(11, 2), Vector2(-11, 2)]), Color("325d65"))
 	draw_line(Vector2(-8, -11), Vector2(7, -11), Color("b9d2c5"), 2, true)
-	draw_rect(Rect2(-10, 6, 20, 19), Color("6c845a"))
-	draw_rect(Rect2(-2, 9, 4, 13), CREAM)
-	draw_rect(Rect2(-6, 13, 12, 4), CREAM)
+	if not game.completed_order("koya_filters"):
+		draw_rect(Rect2(-10, 6, 20, 19), Color("6c845a"))
+		draw_rect(Rect2(-2, 9, 4, 13), CREAM)
+		draw_rect(Rect2(-6, 13, 12, 4), CREAM)
+	if not game.manifest.pending_for_stop("luma").is_empty():
+		draw_rect(Rect2(-11, -5, 22, 11), Color("d0a061"))
+		draw_line(Vector2(0, -4), Vector2(0, 5), CREAM, 2)
 	draw_rect(Rect2(-5, 30, 10, 10), Color("28434a"))
 	draw_line(Vector2(0, -29), Vector2(0, -39), INK, 2, true)
 	if game.hull < 40:

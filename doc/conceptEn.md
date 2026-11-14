@@ -118,3 +118,9 @@ Retain navigation and delivery as the core. Each addition should produce a clear
 ### Second-milestone implementation snapshot
 
 The current build now includes bounded river currents, a wide/slower versus narrow/assisting-rapids fork, and a between-run depot. Deliveries grant 100 logistics-support credits once. River Triple costs 100, adds a third forward gear and more speed, and consumes 18% more fuel at matched input. Credits, ownership and equipped engine persist locally; mission restart preserves them. These additions realize the small upgrade loop above without adding the later proposals. Actual checks, graphical evidence, remaining performance limits and user-playtest status are in [workbench.md](workbench.md).
+
+### Third milestone — choose the relief load
+
+[thirdSteps.md](thirdSteps.md) brings the original cargo-choice idea into the existing short run: filters for Koya alone, or filters plus food for Luma Landing after the refuel buoy. A full load responds more slowly and needs more braking distance; unloading food lightens it. Two matching deliveries create a reason to choose gears, a passage and an extra stop. Scripted runs establish starter viability; human handling acceptance remains separate.
+
+The build includes load cards, a two-item manifest, per-order support (60 for food and 100 for filters), clear partial outcomes and version-1 progress migration. R returns to load selection while preserving progression. Luma's receiving team stocks its shelter; Koya's filters activate the pump and clinic radio. See the workbench for current review evidence and remaining acceptance gates. Drones, refrigeration, combat and a wider campaign remain deferred.

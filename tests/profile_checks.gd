@@ -31,6 +31,7 @@ func _initialize() -> void:
 	check(profile.equip_engine("river_twin"), "Starter can be equipped again")
 	var abandoned := profile.begin_mission()
 	var completed := profile.begin_mission()
+	check(not profile.award_delivery(abandoned), "New issuance immediately closes an abandoned mission reward")
 	check(completed > abandoned and profile.award_delivery(completed) and not profile.award_delivery(abandoned), "Restart advances mission boundary and cannot reward an older mission after success")
 	check(profile.reset_profile() and profile.credits == 0 and profile.owned.size() == 1 and profile.next_mission_id == 1, "Explicit reset clears progression")
 	var blocked := Profile.new("res://tests/missing-profile-check-dir/profile.json")

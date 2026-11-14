@@ -127,14 +127,18 @@ func _process(_delta: float) -> bool:
 			key(KEY_R, true)
 		431: key(KEY_R, false)
 		440:
-			check(game.state == "running" and not game.delivered and not game.pickup_taken and game.hull == 100 and game.elapsed < 1, "R resets and restarts successful mission")
+			check(game.state == "ready" and not game.delivered and not game.pickup_taken and game.hull == 100 and game.elapsed == 0, "R resets successful mission to load briefing")
 			capture("input_09_restart")
+		442: key(KEY_ENTER, true)
+		443: key(KEY_ENTER, false)
 		450: game.fuel = 0.001
 		460:
 			check(game.state == "failure" and game.failure_reason.begins_with("Fuel"), "Fuel failure appears in running graphical build")
 			capture("input_10_fuel_failure")
 		480: key(KEY_R, true)
 		481: key(KEY_R, false)
+		484: key(KEY_ENTER, true)
+		485: key(KEY_ENTER, false)
 		490:
 			game.hull = 1
 			game.boat_pos = game.rocks[0].pos + Vector2(0, 50)
