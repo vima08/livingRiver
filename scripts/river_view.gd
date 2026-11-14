@@ -1,0 +1,248 @@
+class_name RiverView
+extends Node2D
+
+# All scenery is original geometry. World-anchored motifs keep the route stable.
+var game: Node
+const WATER := Color("287e79")
+const INK := Color("143e3b")
+const CREAM := Color("f0ead0")
+const ORANGE := Color("ee9251")
+const FOAM := Color("b1d9c1")
+
+func _process(_delta: float) -> void:
+	queue_redraw()
+
+func _screen(pos: Vector2) -> Vector2:
+	return Vector2(pos.x, pos.y - game.camera_y)
+
+func _noise(seed_value: float) -> float:
+	return fposmod(sin(seed_value * 127.1 + 311.7) * 43758.5453, 1.0)
+
+func _draw() -> void:
+	if game == null:
+		return
+	draw_rect(Rect2(0, 0, 1280, 720), WATER)
+	_draw_water()
+	_draw_banks()
+	for rock: Dictionary in game.rocks:
+		var point := _screen(rock.pos)
+		if point.y > -100 and point.y < 820:
+			_draw_rock(point, float(rock.radius))
+	if not game.pickup_taken:
+		_draw_fuel(_screen(game.fuel_pickup))
+	_draw_village()
+	_draw_boat()
+
+func _draw_water() -> void:
+	var first := int(floor(game.camera_y / 115.0))
+	for row in range(first - 1, first + 9):
+		var world_y := float(row) * 115.0
+		var center: float = game.river_center(world_y)
+		var half: float = game.river_half_width(world_y)
+		for column in range(7):
+			var seed_value := float(row * 19 + column * 7)
+			var x := center + (float(column) / 6.0 - 0.5) * (half * 1.75)
+			var y: float = world_y - game.camera_y + _noise(seed_value) * 80.0
+			var length := 22.0 + _noise(seed_value + 2.0) * 58.0
+			var sway := sin(game.elapsed * 1.3 + seed_value) * 4.0
+			var points := PackedVector2Array([Vector2(x, y), Vector2(x + 3.0 + sway, y + length * 0.45), Vector2(x, y + length)])
+			draw_polyline(points, Color(0.42, 0.74, 0.65, 0.15), 2.0, true)
+			if column % 2 == 0:
+				draw_line(Vector2(x + 13, y + 9), Vector2(x + 16, y + 22), Color(0.65, 0.85, 0.72, 0.22), 1.5, true)
+
+func _draw_banks() -> void:
+	for side in [-1.0, 1.0]:
+		var edge := PackedVector2Array()
+		var shallow := PackedVector2Array()
+		var sand := PackedVector2Array()
+		for sy in range(-48, 801, 16):
+			var wy: float = float(sy) + game.camera_y
+			var x: float = game.river_center(wy) + side * game.river_half_width(wy)
+			edge.append(Vector2(x, sy))
+			shallow.append(Vector2(x - side * 16.0, sy))
+			sand.append(Vector2(x + side * 12.0, sy))
+		var far_x := -100.0 if side < 0 else 1380.0
+		var water_shape := shallow.duplicate()
+		water_shape.append(Vector2(far_x, 800))
+		water_shape.append(Vector2(far_x, -48))
+		draw_colored_polygon(water_shape, Color("4b9581"))
+		var land := edge.duplicate()
+		land.append(Vector2(far_x, 800))
+		land.append(Vector2(far_x, -48))
+		draw_colored_polygon(land, Color("b4ab72"))
+		var forest := sand.duplicate()
+		forest.append(Vector2(far_x, 800))
+		forest.append(Vector2(far_x, -48))
+		draw_colored_polygon(forest, Color("254e3b"))
+		draw_polyline(edge, Color("d1c28b"), 3.0, true)
+		var start_row := int(floor(game.camera_y / 66.0))
+		for row in range(start_row - 2, start_row + 14):
+			var wy := float(row) * 66.0
+			var edge_x: float = game.river_center(wy) + side * game.river_half_width(wy)
+			for layer in range(4):
+				var seed_value: float = float(row * 11 + layer * 31) + side * 9.0
+				var point := Vector2(edge_x + side * (39.0 + layer * 77.0 + _noise(seed_value) * 23.0), wy - game.camera_y + _noise(seed_value + 2) * 27.0)
+				# Leave the contemporary village clearing open at the final dock.
+				if side > 0 and absf(wy - game.dock_pos.y) < 235.0:
+					continue
+				_draw_canopy(point, 29.0 + _noise(seed_value + 8) * 21.0, seed_value)
+			if row % 3 == 0:
+				_draw_palm(Vector2(edge_x + side * 67.0, wy - game.camera_y), float(row) + side)
+
+func _draw_canopy(pos: Vector2, radius: float, seed_value: float) -> void:
+	draw_circle(pos + Vector2(7, 8), radius + 2, Color(0.05, 0.16, 0.12, 0.38))
+	draw_circle(pos, radius, Color("1b4937"))
+	var palette := [Color("36683f"), Color("4e7f45"), Color("6c944d"), Color("8da54f")]
+	for i in range(7):
+		var angle := float(i) * TAU / 7.0 + seed_value
+		var center := pos + Vector2.from_angle(angle) * radius * 0.55
+		var tint: Color = palette[int(_noise(seed_value + i * 3) * 4.0)]
+		draw_circle(center, radius * 0.51, tint)
+		draw_arc(center - Vector2(2, 2), radius * 0.31, PI * 1.05, PI * 1.55, 6, Color(0.65, 0.75, 0.35, 0.3), 1.8, true)
+
+func _draw_palm(pos: Vector2, seed_value: float) -> void:
+	var crown := pos + Vector2(-12, -15)
+	draw_line(pos + Vector2(13, 25), crown, Color("8c8856"), 6.0, true)
+	for i in range(7):
+		var angle := float(i) * TAU / 7.0 + seed_value
+		var direction := Vector2.from_angle(angle)
+		var tip := crown + direction * 59.0
+		var perpendicular := direction.orthogonal()
+		var leaf := PackedVector2Array([crown, crown + direction * 29.0 + perpendicular * 12.0, tip, crown + direction * 27.0 - perpendicular * 7.0])
+		draw_colored_polygon(leaf, Color("9bad51") if i % 2 == 0 else Color("608a45"))
+		draw_line(crown, tip, Color("b6be69"), 1.0, true)
+
+func _draw_rock(pos: Vector2, radius: float) -> void:
+	draw_circle(pos + Vector2(2, 7), radius + 7, Color(0.07, 0.25, 0.24, 0.42))
+	draw_arc(pos + Vector2(0, 5), radius + 9, 0.05, PI - 0.05, 16, FOAM, 3.0, true)
+	draw_arc(pos + Vector2(0, 10), radius + 15, 0.35, 2.65, 12, Color(0.7, 0.86, 0.75, 0.35), 1.8, true)
+	var shape := PackedVector2Array()
+	for i in range(8):
+		var angle := float(i) * TAU / 8.0
+		shape.append(pos + Vector2.from_angle(angle) * radius)
+	draw_colored_polygon(shape, Color("5b6c64"))
+	draw_colored_polygon(PackedVector2Array([shape[4], shape[5], shape[6], shape[7], pos + Vector2(3, 3)]), Color("9a9c83"))
+	draw_colored_polygon(PackedVector2Array([shape[6], shape[7], shape[0], pos + Vector2(3, 3)]), Color("bab596"))
+	draw_polyline(PackedVector2Array([shape[4], shape[5], shape[6], shape[7], shape[0]]), Color("d0c5a0"), 1.5, true)
+	draw_line(pos + Vector2(3, 3), shape[2], Color("344c49"), 2.0, true)
+
+func _draw_fuel(pos: Vector2) -> void:
+	if pos.y < -80 or pos.y > 800:
+		return
+	draw_arc(pos, 35 + sin(game.elapsed * 3) * 3, 0, TAU, 28, Color(0.94, 0.75, 0.35, 0.5), 2.0, true)
+	draw_circle(pos + Vector2(3, 5), 19, INK)
+	draw_style_box(_rounded_box(Color("e9ad47"), 4), Rect2(pos - Vector2(15, 18), Vector2(30, 34)))
+	draw_rect(Rect2(pos + Vector2(-5, -23), Vector2(13, 7)), CREAM)
+	draw_line(pos + Vector2(-7, -8), pos + Vector2(7, 8), Color("8d6937"), 3.0, true)
+	draw_line(pos + Vector2(7, -8), pos + Vector2(-7, 8), Color("8d6937"), 3.0, true)
+
+func _rounded_box(color: Color, radius: int) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = color
+	box.set_corner_radius_all(radius)
+	return box
+
+func _draw_village() -> void:
+	var dock := _screen(game.dock_pos)
+	if dock.y < -300 or dock.y > 1020:
+		return
+	var shore: float = game.river_center(game.dock_pos.y) + game.river_half_width(game.dock_pos.y)
+	draw_style_box(_rounded_box(Color("b8ac77"), 40), Rect2(shore + 12, dock.y - 180, 440, 350))
+	for segment in range(16):
+		var start_angle := float(segment) * TAU / 16.0
+		draw_arc(dock, 95, start_angle, start_angle + 0.23, 4, Color(0.83, 0.91, 0.66, 0.6 + sin(game.elapsed * 2.0) * 0.15), 2.5, true)
+	var pier := Rect2(dock.x + 25, dock.y - 42, shore - dock.x + 50, 84)
+	draw_rect(Rect2(pier.position + Vector2(3, 7), pier.size), Color(0.05, 0.18, 0.16, 0.45))
+	draw_rect(pier, Color("98754c"))
+	for x in range(int(pier.position.x), int(pier.end.x), 13):
+		draw_line(Vector2(x, pier.position.y), Vector2(x, pier.end.y), Color("c2a16b"), 2.0)
+	for px in [pier.position.x + 4, pier.end.x - 4]:
+		for py in [pier.position.y, pier.end.y]:
+			draw_circle(Vector2(px, py), 5, Color("564a35"))
+	# Solar-roofed clinic and smaller store; people are active at the landing.
+	_draw_house(Vector2(shore + 92, dock.y - 125), Vector2(105, 76), true)
+	_draw_house(Vector2(shore + 225, dock.y + 85), Vector2(100, 72), false)
+	var mast := Vector2(shore + 220, dock.y - 108)
+	draw_circle(mast + Vector2(5, 5), 14, Color(0.1, 0.2, 0.13, 0.3))
+	draw_line(mast + Vector2(-12, 7), mast + Vector2(0, -68), CREAM, 3, true)
+	draw_line(mast + Vector2(12, 7), mast + Vector2(0, -68), CREAM, 3, true)
+	for level in range(4):
+		var y := float(level) * -16.0
+		var width := 10.0 - float(level) * 2.0
+		draw_line(mast + Vector2(-width, y), mast + Vector2(width - 2, y - 16), ORANGE, 2, true)
+		draw_line(mast + Vector2(width, y), mast + Vector2(-width + 2, y - 16), ORANGE, 2, true)
+	draw_line(mast + Vector2(0, -68), mast + Vector2(0, -82), INK, 2, true)
+	var beacon := mast + Vector2(0, -73)
+	if game.delivered:
+		draw_circle(beacon, 13, Color(0.79, 0.91, 0.5, 0.2))
+		draw_circle(beacon, 5, Color("e3ed9a"))
+		draw_arc(beacon, 19 + sin(game.elapsed * 2.0) * 3, PI * 1.12, PI * 1.88, 14, Color(0.89, 0.96, 0.65, 0.8), 2, true)
+	else:
+		draw_circle(beacon, 4, Color("705343"))
+	for i in range(3):
+		var person := Vector2(shore + 54 + i * 21, dock.y - 7 + (i % 2) * 22)
+		draw_circle(person + Vector2(2, 4), 7, Color(0.18, 0.23, 0.14, 0.3))
+		draw_line(person + Vector2(0, -2), person + Vector2(0, 7), Color("d68e47") if i % 2 == 0 else Color("d8e6c4"), 9, true)
+		draw_circle(person + Vector2(0, -7), 4.5, Color("67472f"))
+	for i in range(2):
+		var crate := Rect2(shore + 22 + i * 28, dock.y + 55, 23, 23)
+		draw_rect(crate, Color("d0af70"))
+		draw_rect(crate.grow(-3), Color("876d45"), false, 1)
+	var pump := Vector2(shore + 148, dock.y + 27)
+	draw_circle(pump, 15, Color("667f6a"))
+	draw_line(pump, pump - Vector2(0, 25), Color("384c48"), 6, true)
+	draw_line(pump - Vector2(0, 23), pump - Vector2(13, 23), CREAM, 4, true)
+	if game.delivered:
+		draw_circle(pump - Vector2(0, 28), 7, Color("d3e887"))
+		draw_line(pump - Vector2(13, 20), pump - Vector2(13, 3), Color("98d8c6"), 3, true)
+
+func _draw_house(pos: Vector2, size: Vector2, solar: bool) -> void:
+	var rect := Rect2(pos - size * 0.5, size)
+	draw_rect(Rect2(rect.position + Vector2(7, 10), size), Color(0.1, 0.2, 0.13, 0.3))
+	draw_rect(rect, Color("d2bd86"))
+	draw_rect(Rect2(rect.position - Vector2(5, 5), size + Vector2(10, 0)), Color("af7750"))
+	for i in range(8):
+		var x: float = rect.position.x + i * size.x / 8.0
+		draw_line(Vector2(x, rect.position.y - 4), Vector2(x, rect.end.y - 5), Color("d3a575"), 2)
+	draw_line(Vector2(rect.position.x - 6, pos.y - 3), Vector2(rect.end.x + 6, pos.y - 3), Color("764e37"), 3)
+	if solar:
+		var panel := Rect2(rect.position + Vector2(12, 8), Vector2(64, 35))
+		draw_rect(panel.grow(2), CREAM)
+		draw_rect(panel, Color("315b6e"))
+		for i in range(1, 4):
+			draw_line(panel.position + Vector2(i * 16, 0), panel.position + Vector2(i * 16, 35), Color("97b8be"), 1)
+		draw_line(panel.position + Vector2(0, 17), panel.position + Vector2(64, 17), Color("97b8be"), 1)
+
+func _draw_boat() -> void:
+	var pos := _screen(game.boat_pos)
+	if game.impact_flash > 0.0:
+		var flash: float = clampf(game.impact_flash, 0.0, 1.0)
+		var ring_radius := 40.0 + (1.0 - flash) * 30.0
+		draw_circle(pos, 40.0, Color(1.0, 0.57, 0.29, flash * 0.27))
+		draw_arc(pos, ring_radius, 0, TAU, 40, Color(1.0, 0.66, 0.37, flash), 4.0, true)
+		draw_arc(pos, ring_radius + 8.0, 0, TAU, 40, Color(1.0, 0.91, 0.7, flash * 0.6), 1.5, true)
+	var angle: float = clampf(game.velocity.x / 750.0, -0.22, 0.22)
+	var strength: float = clampf(game.velocity.length() / 140.0, 0.12, 1.0)
+	for i in range(6):
+		var distance := float(i) * 12.0 + fposmod(game.elapsed * 55.0, 12.0)
+		var alpha := (1.0 - distance / 84.0) * strength * 0.52
+		draw_arc(pos + Vector2(0, 26 + distance), 8 + distance * 0.25, 0.2, PI - 0.2, 12, Color(0.85, 0.94, 0.82, alpha), 2.5, true)
+	draw_set_transform(pos, angle)
+	var hull := PackedVector2Array([Vector2(0, -36), Vector2(13, -23), Vector2(18, 4), Vector2(15, 33), Vector2(-15, 33), Vector2(-18, 4), Vector2(-13, -23)])
+	var shadow := PackedVector2Array()
+	for point in hull:
+		shadow.append(point + Vector2(5, 7))
+	draw_colored_polygon(shadow, Color(0.03, 0.18, 0.18, 0.45))
+	draw_colored_polygon(hull, ORANGE)
+	draw_polyline(PackedVector2Array([hull[0], hull[1], hull[2], hull[3], hull[4], hull[5], hull[6], hull[0]]), INK, 2, true)
+	draw_colored_polygon(PackedVector2Array([Vector2(0, -30), Vector2(10, -19), Vector2(13, 5), Vector2(11, 28), Vector2(-11, 28), Vector2(-13, 5), Vector2(-10, -19)]), CREAM)
+	draw_colored_polygon(PackedVector2Array([Vector2(-9, -13), Vector2(9, -13), Vector2(11, 2), Vector2(-11, 2)]), Color("325d65"))
+	draw_line(Vector2(-8, -11), Vector2(7, -11), Color("b9d2c5"), 2, true)
+	draw_rect(Rect2(-10, 6, 20, 19), Color("6c845a"))
+	draw_rect(Rect2(-2, 9, 4, 13), CREAM)
+	draw_rect(Rect2(-6, 13, 12, 4), CREAM)
+	draw_rect(Rect2(-5, 30, 10, 10), Color("28434a"))
+	draw_line(Vector2(0, -29), Vector2(0, -39), INK, 2, true)
+	if game.hull < 40:
+		draw_line(Vector2(9, 0), Vector2(4, 8), Color("9f4b3e"), 3, true)
+	draw_set_transform(Vector2.ZERO)

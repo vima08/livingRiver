@@ -1,2 +1,7 @@
 # Archived source documents and artwork
 /doc/archieve/
+.godot/
+exports/
+tmp/
+*.log
+evidence/

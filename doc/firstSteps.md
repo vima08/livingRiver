@@ -67,18 +67,20 @@ Exit evidence: a full run, its measured duration, a screenshot at the intended v
 
 ## Milestone acceptance checklist
 
-- [ ] A clean import and launch produce no script or missing-resource errors.
-- [ ] The player can identify steering, braking, delivery, and restart controls without reading source code.
-- [ ] Acceleration, turning, and braking respond predictably; the boat can clear every intended passage.
-- [ ] Camera lead provides time to react, and docking remains reachable during scrolling.
-- [ ] Visible banks and rocks agree with their collision boundaries; impact gives clear feedback.
-- [ ] Fuel drains during active play, a pickup replenishes it within its maximum, and terminal screens stop simulation.
-- [ ] The dock communicates its interaction zone and speed requirement; aid cannot unload from elsewhere.
-- [ ] Delivery produces one success state and visible village feedback.
-- [ ] Empty fuel and destroyed hull each produce a clear failure state.
-- [ ] Restart restores position, velocity, camera, resources, pickups, delivery status, village feedback, and HUD.
-- [ ] A full successful run lasts roughly three minutes; record the measured result and explain substantial deviation.
-- [ ] Boat, navigable water, obstacles, dock, and HUD remain distinct at the target resolution.
+Evidence status: checked items are supported by scripted simulation, graphical input playback, and independent functional/visual reviews recorded in [workbench.md](workbench.md). The route takes **169.90 simulated seconds**. Human handling enjoyment and first-play success have not been verified; the final complete-milestone approval remains open.
+
+- [x] A clean import and launch produce no script or missing-resource errors.
+- [x] The player can identify steering, braking, delivery, and restart controls without reading source code.
+- [x] Acceleration, turning, and braking respond predictably; the boat can clear every intended passage.
+- [x] Camera lead provides time to react, and docking remains reachable during scrolling.
+- [x] Visible banks and rocks agree with their collision boundaries; impact gives clear feedback.
+- [x] Fuel drains during active play, a pickup replenishes it within its maximum, and terminal screens stop simulation.
+- [x] The dock communicates its interaction zone and speed requirement; aid cannot unload from elsewhere.
+- [x] Delivery produces one success state and visible village feedback.
+- [x] Empty fuel and destroyed hull each produce a clear failure state.
+- [x] Restart restores position, velocity, camera, resources, pickups, delivery status, village feedback, and HUD.
+- [x] A full successful run lasts roughly three minutes; record the measured result and explain substantial deviation.
+- [x] Boat, navigable water, obstacles, dock, and HUD remain distinct at the target resolution.
 - [ ] An independent critic inspected actual evidence and passed the milestone. List anything they could not verify.
 
 ## Review and iteration
