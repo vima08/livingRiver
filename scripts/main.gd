@@ -16,6 +16,7 @@ const Settings = preload("res://scripts/game_settings.gd")
 const Text = preload("res://scripts/localization.gd")
 const FrontEnd = preload("res://scripts/front_end.gd")
 const Audio = preload("res://scripts/river_audio.gd")
+const Contracts = preload("res://scripts/river_contracts.gd")
 
 var boat_pos := Vector2(640, 0)
 var velocity := Vector2.ZERO
@@ -62,8 +63,56 @@ var front_end: CanvasLayer
 var ui_screen := ""
 var screen_return := ""
 var engine_throttle := 0.0
+var cruise_active := false
 var _input_guard_until := -1
 var _notice_templates: Dictionary = {}
+var contract_id := "base_light"
+var travel_sign := -1.0
+var base_pos := Vector2.ZERO
+var depot_return_screen := ""
+
+func contract() -> Dictionary:
+	return Contracts.job(contract_id)
+
+func landing_name(id: String) -> String:
+	return str(Contracts.LANDINGS.get(id, id))
+
+func landing_position(id: String) -> Vector2:
+	return luma_pos if id == "luma" else dock_pos if id == "koya" else base_pos
+
+func route_distance_total() -> float:
+	var job := contract()
+	return absf(float(Contracts.LANDING_Y[job.destination]) - float(Contracts.LANDING_Y[job.origin]))
+
+func route_distance_remaining() -> float:
+	return boat_pos.distance_to(next_stop_position())
+
+func boat_angle() -> float:
+	return (PI if travel_sign > 0 else 0.0) - travel_sign * clampf(velocity.x / 750.0, -0.22, 0.22)
+
+func open_map() -> void:
+	if ui_screen in ["language", "settings", "credits"]:
+		return
+	ui_screen = ""
+	var jobs := Contracts.available(profile.current_landing)
+	contract_id = jobs[0]
+	reset_run()
+	if is_instance_valid(front_end):
+		front_end.inspected_landing = profile.current_landing
+	ui_screen = "map"
+	_guard_ui_transition()
+
+func back_to_map() -> void:
+	open_map()
+
+func select_contract(id: String) -> bool:
+	if ui_screen != "map" or id not in Contracts.available(profile.current_landing):
+		return false
+	contract_id = id
+	ui_screen = ""
+	reset_run()
+	_guard_ui_transition()
+	return true
 
 func set_notice(kind: String, source: String, values: Array = []) -> void:
 	var raw: String = source % values if not values.is_empty() else source
@@ -93,12 +142,10 @@ func choose_language(code: String) -> void:
 func play_from_menu() -> void:
 	if ui_screen != "menu":
 		return
-	ui_screen = ""
-	reset_run()
-	_guard_ui_transition()
+	open_map()
 
 func open_settings() -> void:
-	if ui_screen not in ["", "menu"] or state == "running":
+	if ui_screen not in ["", "menu", "map"] or state == "running":
 		return
 	screen_return = ui_screen
 	ui_screen = "settings"
@@ -109,6 +156,10 @@ func close_screen() -> void:
 		ui_screen = screen_return
 	elif ui_screen == "credits":
 		ui_screen = "menu"
+	elif ui_screen == "map":
+		ui_screen = "menu"
+	elif ui_screen.is_empty() and state == "ready":
+		open_map()
 	_guard_ui_transition()
 
 func resume_run() -> void:
@@ -131,8 +182,9 @@ func quit_game() -> void:
 		get_tree().quit()
 
 func select_load(preset: String) -> bool:
-	if not ui_screen.is_empty() or state != "ready" or preset not in ["light", "full"]:
+	if not ui_screen.is_empty() or state != "ready" or preset not in ["light", "full"] or contract().origin != "base":
 		return false
+	contract_id = "base_" + preset
 	load_preset = preset
 	manifest.configure(preset)
 	return true
@@ -141,6 +193,8 @@ func completed_order(id: String) -> bool:
 	return manifest.completed_order(id)
 
 func nearby_stop() -> String:
+	if boat_pos.distance_to(base_pos) < 95:
+		return "base"
 	if boat_pos.distance_to(luma_pos) < 95:
 		return "luma"
 	if boat_pos.distance_to(dock_pos) < 95:
@@ -149,33 +203,35 @@ func nearby_stop() -> String:
 
 func next_stop_position() -> Vector2:
 	var order: Dictionary = manifest.next_order()
-	return luma_pos if not order.is_empty() and order.stop == "luma" else dock_pos
+	return landing_position(str(order.stop) if not order.is_empty() else str(contract().destination))
 
 func complete_order(stop: String) -> bool:
 	if not ui_screen.is_empty() or state != "running" or nearby_stop() != stop or velocity.length() >= DOCK_SPEED:
 		return false
 	var order: Dictionary = manifest.pending_for_stop(stop)
-	if order.is_empty():
+	var empty_arrival: bool = manifest.orders.is_empty() and stop == contract().destination
+	if order.is_empty() and not empty_arrival:
 		return false
-	# A failed launch-save can be retried safely when storage is available again.
-	if mission_id == 0:
-		mission_id = profile.begin_mission()
-	var committed: bool = profile.has_receipt(mission_id, order.id)
-	if not committed:
-		committed = profile.award_order(mission_id, order.id)
+	var committed: bool = profile.commit_arrival(mission_id) if empty_arrival else profile.award_order(mission_id, order.id)
 	if not committed:
 		set_notice("unload_notice", "Delivery not saved. Cargo retained. Hold E to retry. %s", [profile.load_notice])
 		return false
-	manifest.mark_completed(order.id)
+	if not empty_arrival:
+		manifest.mark_completed(order.id)
 	run_support = manifest.earned_support()
 	reward_received = run_support > 0
-	set_notice("unload_notice", "%s delivered to %s. +%d support saved.", [order.cargo, order.recipient, order.reward])
+	if empty_arrival:
+		unload_notice = "Moored at Base. No cargo or support reward. Location saved."
+	else:
+		set_notice("unload_notice", "%s delivered to %s. +%d support saved.", [order.cargo, order.recipient, order.reward])
 	unload_progress = 0
 	play_tone(880, 0.35)
-	if stop == "koya" or manifest.completed_count() == manifest.total_count():
+	if stop == contract().destination:
 		delivered = manifest.completed_count() == manifest.total_count()
 		state = "success" if delivered else "partial"
 		velocity = Vector2.ZERO
+		cruise_active = false
+		engine_throttle = 0.0
 	return true
 
 func apply_equipped_engine() -> void:
@@ -185,8 +241,10 @@ func apply_equipped_engine() -> void:
 	selected_gear = 1
 
 func open_depot() -> void:
-	if not ui_screen.is_empty() or state not in ["ready", "success", "partial", "failure"]:
+	if ui_screen not in ["", "map"] or state not in ["ready", "success", "partial", "failure"]:
 		return
+	depot_return_screen = ui_screen
+	ui_screen = ""
 	depot_return_state = state
 	state = "depot"
 	depot_notice = profile.load_notice
@@ -197,6 +255,8 @@ func close_depot() -> void:
 		return
 	if state == "depot":
 		state = depot_return_state
+		ui_screen = depot_return_screen
+	_guard_ui_transition()
 	reset_profile_pending = false
 
 func buy_engine() -> void:
@@ -224,6 +284,11 @@ func reset_progression() -> void:
 		depot_notice = "Reset removes credits and engine ownership. Click Confirm reset to continue."
 		return
 	if profile.reset_profile():
+		contract_id = "base_light"
+		reset_run()
+		state = "depot"
+		depot_return_state = "ready"
+		depot_return_screen = "map"
 		apply_equipped_engine()
 		depot_notice = "Progress reset. River Twin is ready."
 		# Terminal delivery state cannot issue another reward after a reset.
@@ -249,7 +314,7 @@ func current_at(pos: Vector2) -> Vector2:
 	var fork := smoothstep(7600, 8100, progress) * (1.0 - smoothstep(10700, 11200, progress))
 	var branch := Vector2(0, 32)
 	if pos.x > island_center(pos.y):
-		branch = Vector2(sin(progress / 210) * 18, -55)
+		branch = Vector2(sin(progress / 210) * 12, 48)
 	return Vector2(-12, 35) * gentle + branch * fork
 
 func speed_kmh() -> float:
@@ -311,10 +376,12 @@ func _ready() -> void:
 		Engine.time_scale = 8.0
 
 func setup_inputs() -> void:
+	if InputMap.has_action("brake"):
+		InputMap.erase_action("brake")
 	var bindings := {
 		"steer_left": [KEY_A, KEY_LEFT], "steer_right": [KEY_D, KEY_RIGHT],
 		"accelerate": [KEY_W, KEY_UP], "slow_down": [KEY_S, KEY_DOWN],
-		"brake": [KEY_SPACE], "deliver": [KEY_E], "restart": [KEY_R],
+		"deliver": [KEY_E], "restart": [KEY_R],
 		"start_run": [KEY_ENTER], "pause_run": [KEY_ESCAPE],
 		"toggle_fps": [KEY_QUOTELEFT], "depot": [KEY_B]
 	}
@@ -342,6 +409,7 @@ func build_route() -> void:
 	for y in [-8500.0, -9700.0, -10600.0]:
 		rocks.append({"pos": Vector2(river_center(y) + river_half_width(y) - 30, y), "radius": 28.0})
 	fuel_pickup = Vector2(river_center(-12400), -12400)
+	base_pos = Vector2(river_center(0) - river_half_width(0) + 105, 0)
 	dock_pos = Vector2(river_center(-ROUTE_LENGTH) + river_half_width(-ROUTE_LENGTH) - 105, -ROUTE_LENGTH)
 	luma_pos = Vector2(river_center(-14500) - river_half_width(-14500) + 105, -14500)
 	# Still-water room for Luma's approach, matching the visible dock clearing.
@@ -350,9 +418,12 @@ func build_route() -> void:
 func reset_run() -> void:
 	if not ui_screen.is_empty():
 		return
-	boat_pos = Vector2(river_center(0), 0)
+	if contract().origin != profile.current_landing:
+		contract_id = Contracts.available(profile.current_landing)[0]
+	travel_sign = Contracts.direction(contract_id)
+	boat_pos = landing_position(str(contract().origin))
 	velocity = Vector2.ZERO
-	camera_y = -520.0
+	camera_y = boat_pos.y - (520.0 if travel_sign < 0 else 200.0)
 	fuel = 100.0
 	hull = 100.0
 	elapsed = 0.0
@@ -369,18 +440,20 @@ func reset_run() -> void:
 	gear_notice_time = 0
 	mission_id = 0
 	reward_received = false
-	manifest.configure(load_preset)
+	manifest.configure_contract(contract_id)
+	load_preset = manifest.preset
 	unload_notice = ""
 	run_support = 0
 	unload_stop = ""
 	engine_throttle = 0
+	cruise_active = false
 	_notice_templates.clear()
 	apply_equipped_engine()
 
 func start_run() -> void:
 	if not ui_screen.is_empty() or state != "ready":
 		return
-	if not manifest.valid_data() or manifest.completed_count() != 0:
+	if contract().origin != profile.current_landing or manifest.contract_id != contract_id or not manifest.valid_data() or manifest.completed_count() != 0:
 		gear_notice = "Choose a valid relief load before launch."
 		gear_notice_time = 4
 		return
@@ -388,14 +461,20 @@ func start_run() -> void:
 	apply_equipped_engine()
 	if engine.supports_gear(briefing_gear):
 		selected_gear = briefing_gear
-	mission_id = profile.begin_mission()
-	state = "running"
+	mission_id = profile.begin_mission(contract_id)
 	if mission_id == 0:
-		gear_notice = "Profile cannot be saved yet. Delivery will retry saving."
+		set_notice("gear_notice", "Launch not saved. Stay at the landing and retry. %s", [profile.load_notice])
 		gear_notice_time = 6
+		return
+	state = "running"
+	cruise_active = false
 
 func _physics_process(delta: float) -> void:
 	if not ui_screen.is_empty():
+		if ui_screen == "map" and Input.is_action_just_pressed("depot"):
+			open_depot()
+		if Input.is_action_just_pressed("toggle_fps"):
+			show_fps = not show_fps
 		if Input.is_action_just_pressed("pause_run"):
 			close_screen()
 		return
@@ -413,25 +492,35 @@ func _physics_process(delta: float) -> void:
 		else:
 			open_depot()
 	if Input.is_action_just_pressed("restart"):
-		reset_run()
+		open_map()
+		return
 	if Input.is_action_just_pressed("start_run") and state == "ready":
 		start_run()
 	if Input.is_action_just_pressed("pause_run"):
 		if state == "depot":
 			close_depot()
+		elif state == "ready":
+			open_map()
+			return
 		elif state == "running":
 			state = "paused"
 			engine_throttle = 0
+			cruise_active = false
 		elif state == "paused":
 			state = "running"
 	# Independent axes preserve forward speed while steering diagonally.
-	var steering := Vector2(Input.get_axis("steer_left", "steer_right"), Input.get_axis("accelerate", "slow_down"))
+	if state == "running":
+		if Input.is_action_just_pressed("accelerate"):
+			cruise_active = true
+		if Input.is_action_pressed("slow_down"):
+			cruise_active = false
+	var steering := Vector2(Input.get_axis("steer_left", "steer_right"), -1.0 if cruise_active else 0.0)
 	if demo:
 		var controls := pilot_controls()
 		simulate(delta, controls[0], controls[1], controls[2])
 		capture_demo()
 	else:
-		var braking := Input.is_action_pressed("brake") or Input.is_action_pressed("slow_down")
+		var braking := not cruise_active
 		simulate(delta, steering, braking, Input.is_action_pressed("deliver"))
 
 func simulate(delta: float, steering: Vector2, braking: bool, unloading: bool) -> void:
@@ -441,7 +530,7 @@ func simulate(delta: float, steering: Vector2, braking: bool, unloading: bool) -
 	impact_cooldown = maxf(0, impact_cooldown - delta)
 	impact_flash = maxf(0, impact_flash - delta * 2.5)
 	var throttle := maxf(0, -steering.y)
-	var direction := 1.0 if selected_gear == 9 else -1.0
+	var direction := travel_sign * (-1.0 if selected_gear == 9 else 1.0)
 	var north_speed: float = direction * throttle * engine.speed_for(selected_gear)
 	var target := Vector2(steering.x * 205, north_speed)
 	var slowing := braking or steering.y > 0
@@ -451,7 +540,7 @@ func simulate(delta: float, steering: Vector2, braking: bool, unloading: bool) -
 	var drive_target := target
 	# Current is incorporated once in target ground velocity, never in camera scroll.
 	target += current_at(boat_pos)
-	# W drives the selected gear; S and Space brake. Release W to coast to rest.
+	# Physical W/S latch cruise in the input layer; pilots supply explicit demand.
 	var acceleration: float = engine.acceleration_for(selected_gear)
 	var heavy: bool = manifest.full_load()
 	acceleration *= 0.8 if heavy else 1.0
@@ -463,7 +552,7 @@ func simulate(delta: float, steering: Vector2, braking: bool, unloading: bool) -
 		boat_pos.y = bounded_y
 		velocity.y = 0.0
 	resolve_collisions()
-	camera_y = boat_pos.y - 520
+	camera_y = boat_pos.y - (520.0 if travel_sign < 0 else 200.0)
 	fuel = maxf(0, fuel - delta * (0.55 + drive_target.length() * 0.0008) * engine.fuel_multiplier)
 	if not pickup_taken and boat_pos.distance_to(fuel_pickup) < 53:
 		pickup_taken = true
@@ -491,15 +580,18 @@ func simulate(delta: float, steering: Vector2, braking: bool, unloading: bool) -
 	else:
 		unload_progress = 0
 		var already_delivered := completed_order("luma_food" if stop == "luma" else "koya_filters")
-		if unloading and not stop.is_empty() and manifest.pending_for_stop(stop).is_empty() and not already_delivered:
+		var mooring: bool = manifest.orders.is_empty() and stop == contract().destination
+		if unloading and not stop.is_empty() and manifest.pending_for_stop(stop).is_empty() and not already_delivered and not mooring:
 			unload_notice = "No matching cargo for this landing. Continue to the next request."
 
 func can_deliver() -> bool:
-	return state == "running" and not manifest.pending_for_stop(nearby_stop()).is_empty() and velocity.length() < DOCK_SPEED
+	var stop := nearby_stop()
+	var matching: bool = not manifest.pending_for_stop(stop).is_empty() or (manifest.orders.is_empty() and stop == contract().destination)
+	return state == "running" and matching and velocity.length() < DOCK_SPEED
 
 func resolve_collisions() -> void:
 	# A narrow capsule follows the hull rather than an oversized bounding circle.
-	var axis := Vector2.DOWN.rotated(clampf(velocity.x / 750.0, -0.22, 0.22)) * BOAT_HALF_AXIS
+	var axis := Vector2.DOWN.rotated(boat_angle()) * BOAT_HALF_AXIS
 	for endpoint: Vector2 in [axis, -axis]:
 		var sample := boat_pos + endpoint
 		var center := river_center(sample.y)
@@ -544,6 +636,7 @@ func finish_failure(reason: String) -> void:
 	failure_reason = reason
 	velocity = Vector2.ZERO
 	engine_throttle = 0
+	cruise_active = false
 	unload_progress = 0
 	play_tone(160, 0.4)
 
@@ -554,26 +647,28 @@ func play_tone(frequency: float, _duration: float) -> void:
 	audio.play_event(event.get(int(frequency), "gear"))
 
 func pilot_controls() -> Array:
-	var target_x := river_center(boat_pos.y - 160)
+	var target_x := river_center(boat_pos.y + travel_sign * 160)
 	# This opt-in evidence pilot steers the same simulation as keyboard input.
 	# Look ahead around protruding rocks instead of assuming center water is safe.
 	for rock: Dictionary in rocks:
-		var ahead: float = boat_pos.y - rock.pos.y
+		var ahead: float = (rock.pos.y - boat_pos.y) * travel_sign
 		if ahead > -90 and ahead < 350 and absf(target_x - rock.pos.x) < rock.radius + 75:
 			var side := signf(river_center(rock.pos.y) - rock.pos.x)
 			target_x = rock.pos.x + side * (rock.radius + 85)
-	if boat_pos.y < -7000 and boat_pos.y > -11600:
+	var approach_start := -7000.0 if travel_sign < 0 else -7300.0
+	var approach_end := -11600.0 if travel_sign < 0 else -11800.0
+	if boat_pos.y < approach_start and boat_pos.y > approach_end:
 		# Begin choosing a passage before the island reaches the bow.
-		target_x = river_center(boat_pos.y - 160) + (185.0 if pilot_branch == "rapids" else -155.0)
+		target_x = river_center(boat_pos.y + travel_sign * 160) + (185.0 if pilot_branch == "rapids" else -155.0)
 	if not pickup_taken and absf(boat_pos.y - fuel_pickup.y) < 450:
 		target_x = fuel_pickup.x
-	var visit_luma := load_preset == "full" and not completed_order("luma_food") and not pilot_skip_luma
-	if visit_luma and absf(boat_pos.y - luma_pos.y) < 600:
-		target_x = luma_pos.x
-	if boat_pos.y < -ROUTE_LENGTH + 450:
-		target_x = dock_pos.x
+	var destination := next_stop_position()
+	if pilot_skip_luma and contract_id == "base_full":
+		destination = dock_pos
+	if absf(boat_pos.y - destination.y) < 600:
+		target_x = destination.x
 	var horizontal := clampf((target_x - boat_pos.x) * 0.025 - velocity.x * 0.004, -1, 1)
-	var near_dock := boat_pos.distance_to(dock_pos) < 80 or (visit_luma and boat_pos.distance_to(luma_pos) < 75)
+	var near_dock := boat_pos.distance_to(destination) < 75
 	return [Vector2(horizontal, -1), near_dock, near_dock]
 
 func capture_demo() -> void:

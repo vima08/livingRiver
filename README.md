@@ -1,12 +1,12 @@
 # Living River
 
-A Godot 4.7.2 river-delivery prototype: choose filters for Koya alone or a heavier relief load with food for Luma too. Read the current, choose a passage, deliver matching aid, and use support to improve your engine. The starter-engine route takes about three minutes. Art and sound are generated from original code; no external game assets are required.
+A Godot 4.7.2 river-delivery prototype linking Base, Luma and Koya. Choose a locally supplied job, navigate upstream or downstream, deliver aid and depart next time from your last safe landing. The Base relief run takes about three minutes; village legs are shorter. Art and sound are generated from original code; no external game assets are required.
 
 ## Play
 
-Open `project.godot` in Godot **4.7.2** and press **F6** with the main scene open, or **F5** to run the project. On first launch choose English or Russian, then select **Play**. Choose Light or Full relief in the briefing, then press **Enter** or click **Cast off**.
+Open `project.godot` in Godot **4.7.2** and press **F6** with the main scene open, or **F5** to run the project. On first launch choose English or Russian, then select **Play**. The map marks your saved landing; choose a local contract, read its briefing, then press **Enter** or click **Cast off**. Remote landings can be inspected but cannot start a trip.
 
-The start menu provides Settings, Credits and Quit. Settings offers live English/Russian switching plus separate Master, Music and Effects levels; zero mutes that bus, and Effects includes the engine. Language and levels persist separately from progression in `settings.cfg`. Open Settings from the pause screen to adjust them during a run; Back keeps the mission paused. **End run and return to menu** abandons unfinished cargo while retaining saved support and engines. Play opens a fresh briefing; mid-river resume is not implemented.
+The start menu provides Settings, Credits and Quit. Settings offers live English/Russian switching plus separate Master, Music and Effects levels; zero mutes that bus, and Effects includes the engine. Language and levels persist separately from progression in `settings.cfg`. Open Settings from the pause screen to adjust them during a run; Back keeps the mission paused. **End run and return to menu** abandons unfinished cargo while retaining saved support, engines and the last committed landing. Play opens that landing's map; mid-river resume is not implemented.
 
 From PowerShell on this machine:
 
@@ -16,29 +16,30 @@ From PowerShell on this machine:
 
 | Controls | Action |
 |---|---|
-| A / D or Left / Right | Steer across the river |
-| W / Up | Accelerate in the selected gear's direction |
-| S / Down | Brake to a stop |
+| A / D or Left / Right | Steer screen-left/right in either heading |
+| W / Up | Start continuous cruise at the selected gear; backward in gear 9 |
+| S / Down | Stop the engine and decelerate; stays stopped after release |
 | 1 / 2 (number row or keypad) | Starter engine forward gears |
 | 9 (number row or keypad) | Reverse gear; slow down before changing direction |
-| Space | Brake to a complete stop |
-| Hold E | Unload while stopped inside the dock circle |
-| R | Return to load selection; keep credits and engines |
+| Hold E | Unload or moor the empty return while stopped inside the destination circle |
+| R | Abandon the leg and open the last-safe-landing map; retain committed progress |
 | Escape | Pause / resume |
 | B | Open / close the depot between runs |
 | Backtick / grave accent | Show / hide the FPS counter (hidden on startup) |
 
-Start in first gear for maneuvering; select second for the main river run. Hold W to drive the selected gear, S to brake, and A/D to steer. To reverse, slow below about 8 km/h, press 9, then hold W. Releasing throttle coasts to a stop. The HUD shows actual ground speed in km/h, selected gear and engine gear count. The river uses 0.05 meters per world unit: the route is 1.3 km, with the same approximately three-minute duration as before. Previous 26 km text was unscaled world distance.
+Start in first gear for maneuvering; select second for the main river run. Tap W to start cruise at the selected gear; releasing W keeps the engine driving. Tap S to stop the engine and slow the boat, then hold E to unload. A/D steer. To reverse, use S to slow below about 8 km/h, press 9, then tap W. Space has no gameplay action. Pause cancels cruise; press W again after resuming. Current can still carry an unpowered boat. The HUD shows actual ground speed in km/h, selected gear and engine gear count. The river uses 0.05 meters per world unit: the whole route is 1.3 km and takes about three minutes.
 
-Collect the orange refuel buoy near the midpoint. Stay clear of rocks and the sandy bank edge. At Koya Landing, enter the dashed circle, hold S or Space, then hold E for two seconds. Delivery activates the village pump and radio beacon. Running out of fuel or hull ends the run.
+All landings offer free fuel/repair before departure: each leg starts at 100 hull/fuel. Collect the orange buoy when your route passes it. Stay clear of rocks and the sandy bank edge. At your destination enter the dashed circle, brake, then hold E for two seconds. Running out of fuel or hull ends the run and retains the last committed landing.
 
-Follow water arrows: current changes actual travel speed and can carry an unpowered boat. Before the island, choose the wider left channel with opposing flow, or the narrower right rapids with assisting flow and bank rocks. Both work with the starter engine. The channels rejoin before the orange refuel buoy. The dock is in still water.
+The map stays north-up and current zones flow south toward Base. Northbound aid runs work against them; southbound trips use forward gears with the boat facing south. A/D remain screen-relative. Follow the water arrows: the left fork is wider with gentler southward flow; the right has stronger southward rapids and bank rocks. Both work with the starter engine. The old north-assisting shortcut has been retuned. Landing approaches are calm.
 
-Light carries filters to Koya for **100 support**. Full relief also carries food to **Luma Landing**, on the left bank after the buoy, for **60 support**. Both aboard means 20% slower acceleration and 15% less braking deceleration; brake earlier. Delivering food restores light handling and continues the run. Missing Luma and unloading at Koya ends with a partial result. Failure keeps already saved delivery rewards; undelivered cargo returns to the depot.
+From Base, Light carries filters to Koya for **100 support**. Full relief also carries food to **Luma Landing** for **60 support**. Both aboard means 20% slower acceleration and 15% less braking deceleration; unloading food restores light handling. Skipping Luma and finishing at Koya gives a partial result. Koya's cooperative supplies food for Luma (60); Luma's cache supplies filters for Koya (100). Luma also offers an **empty return to Base**: no cargo or reward; hold E at Base to moor and save the arrival. Prototype supplies replenish between trips.
 
-Press **B** in the briefing or after a run to open the depot. **River Triple** costs 100 credits, adds third gear and more top speed, and uses 18% more fuel at matched input. Buy, equip, then **Plan next run** to choose cargo. You can switch back to the owned starter for free. The depot compares the two engines before purchase.
+Every matching committed delivery saves its landing with its support. For example, delivering food at Luma then failing near Koya recovers at Luma with the earned 60. Failed saves retain cargo and the old checkpoint for retry. Incidental docking without a matching delivery does not move the checkpoint. **Plan next trip** opens the map at your saved landing.
 
-Credits, ownership and equipped engine are saved in Godot's user-data directory as `profile.json`. Valid version-1 profiles migrate automatically. R abandons unfinished cargo and returns to a fresh briefing while retaining committed rewards. The depot's separate **Reset progression** button requires a second confirmation click and returns to the starter profile. Invalid saves fall back to the starter; failed reward saves retain cargo and permit unloading retry. Tests use isolated profiles and do not spend your credits.
+Press **B** on the map, in the briefing or after a run to open the depot. **River Triple** costs 100 credits, adds third gear and more top speed, and uses 18% more fuel at matched input. Buy, equip, then **Plan next trip**. You can switch back to the owned starter for free. The depot compares the two engines before purchase.
+
+Version-3 `profile.json` saves credits, engines and the last safe landing. Valid version-1/2 profiles migrate automatically, preserving progress and starting at Base. Invalid/future originals are preserved and progression changes stay blocked until an explicit reset. The depot's separate **Reset progression** action requires confirmation, returns to Base/starter progress and retains language/audio settings. Tests isolate both files and do not spend player credits.
 
 The game has an original looping engine, a quiet 32-second instrumental theme and cached event cues. Throttle, gear and load affect the engine; unpowered current drift does not rev it. Music and engine use separate players so a delivery/collision cue cannot interrupt them. Audio provenance and regeneration instructions are in [assets/audio/README.md](assets/audio/README.md). Human listening/translation acceptance and performance qualifications are recorded in the workbench.
 
@@ -51,29 +52,22 @@ Use the console executable above as `$godotExe`:
 ```powershell
 & $godotExe --headless --path . --editor --import
 & $godotExe --headless --path . --quit-after 120
-& $godotExe --headless --path . --script tests/mission_checks.gd
-& $godotExe --headless --path . --script tests/critic_regressions.gd
-& $godotExe --headless --path . --script tests/gear_checks.gd
-& $godotExe --headless --path . --script tests/river_checks.gd
-& $godotExe --headless --path . --script tests/river_adversarial.gd
-& $godotExe --headless --path . --script tests/profile_checks.gd
-& $godotExe --headless --path . --script tests/profile_adversarial.gd
-& $godotExe --headless --path . --script tests/delivery_checks.gd
-& $godotExe --headless --path . --script tests/order_profile_checks.gd
-& $godotExe --headless --path . --script tests/save_adversarial3.gd
-& $godotExe --headless --path . --script tests/delivery_adversarial3.gd
+& $godotExe --headless --path . --script tests/profile_journey5.gd
+& $godotExe --headless --path . --script tests/save_adversarial5.gd
+& $godotExe --headless --path . --script tests/journey_checks5.gd
 & $godotExe --headless --path . --script tests/settings_checks.gd
 & $godotExe --headless --path . --script tests/localization_checks.gd
 & $godotExe --headless --path . --script tests/audio_checks.gd
 & $godotExe --headless --path . --script tests/audio_loop_checks.gd
-& $godotExe --headless --path . --script tests/presentation_adversarial4.gd
+& $godotExe --path . --script tests/map_graphical5.gd
+& $godotExe --path . --script tests/handling_graphical5.gd
 ```
 
-`tests/mission_checks.gd` measures the complete route with scripted steering and exercises resource/mission transitions. The independent regression suite covers dock overshoot recovery and real engine restart input. Neither is a human playtest.
+`journey_checks5.gd` measures eleven full fixed-step cases without resource/position edits after launch. Graphical critics exercise physical inputs and actual map/depot controls; later dock/fork examples are explicitly staged. Neither is a human playtest. Older milestone-1–4 harnesses below are historical evidence fixtures: some encode superseded Base-only launch, R-to-briefing and version-2 save assumptions. Use the fifth-milestone suites for current acceptance.
 
 Scene fixtures explicitly bypass the front end and isolate settings/progression unless `show_frontend` metadata is set. `presentation_adversarial4.gd` and `localization_adversarial4.gd` exercise the actual new screens graphically. Headless audio output is disabled to avoid engine Dummy-playback teardown leaks; headless buffer/control checks do not establish audible output. `audio_runtime4.gd` requires graphical real-time execution for 114 seconds and records actual mixer playback. Its Master-bus recording is before Master mute/fader, so physical mute and audible quality still require listening.
 
-To reproduce normal-speed graphical keyboard playback (overwrites its evidence):
+Historical normal-speed graphical keyboard playback (overwrites its evidence and requires its earlier behavior assumptions):
 
 ```powershell
 & $godotExe --path . --script tests/input_playback.gd --fixed-fps 30 --write-movie doc/evidence/handling.avi
@@ -103,6 +97,6 @@ Third-milestone evidence separates a complete accelerated full-load route from n
 
 Review media is local ignored evidence. These harnesses use test profiles and do not change player progression.
 
-To measure rendering, use `tests/performance_probe.gd -- --mode=current --long` in a graphical run (uncapped, physics disabled). `tests/performance_route.gd` instead measures a complete real-time scripted Full relief run using the normal window/VSync settings and 60 Hz physics. Run these separately from the editor's game or other benchmark windows. See the workbench for before/after results and remaining frame-time spikes.
+Current rendering comparisons use `tests/presentation_benchmark5.gd` with the identical harness in the frozen baseline. `tests/performance_journey5.gd` measures a continuous real-time Base Full → Koya food return → empty Base return using default audio, window/VSync and 60 Hz physics. Run graphical checks and benchmarks separately. Exact commands, source identities, results and remaining stalls are recorded in the workbench and local review reports.
 
-See [the workbench](doc/workbench.md) for exact review status and limitations, [the accepted first-step plan](doc/firstSteps.md), [the completed second-step plan](doc/secondSteps.md), [third-step acceptance](doc/thirdSteps.md), [the proposed fourth step and river-map follow-up](doc/fourthSteps.md), and [the concept](doc/conceptEn.md) for future directions. Art is intentionally a readable procedural prototype rather than finished painted artwork.
+See [the workbench](doc/workbench.md) for exact review status and limitations, [first](doc/firstSteps.md), [second](doc/secondSteps.md), [third](doc/thirdSteps.md), [fourth](doc/fourthSteps.md) and [fifth milestone criteria](doc/fifthSteps.md), and [the concept](doc/conceptEn.md) for future directions. Art is intentionally a readable procedural prototype rather than finished painted artwork.

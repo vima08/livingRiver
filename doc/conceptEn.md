@@ -147,4 +147,19 @@ An engine loop should communicate idle, throttle, gears and load without mistaki
 
 ### Planned sequence
 
-[fourthSteps.md](fourthSteps.md) implements milestone 4 for menu, English/Russian UI and original engine/music audio, followed by a separately reviewed milestone 5 for connected departures and two-way river travel. Settings persist separately from progression. The user confirms Russian is good and recurring engine clicks are fixed; remaining listening, handling and performance acceptance are tracked in [workbench.md](workbench.md). Connected locations and return routes remain unimplemented.
+[fourthSteps.md](fourthSteps.md) implements milestone 4 for menu, English/Russian UI and original engine/music audio. Settings persist separately from progression. The user confirms Russian is good and recurring engine clicks are fixed; remaining listening, handling and performance acceptance are tracked in [workbench.md](workbench.md). Milestone 5 now connects departures and two-way river travel, with its actual independent review status recorded there.
+
+### Fifth milestone — connect the existing landings
+
+[fifthSteps.md](fifthSteps.md) now implements a Base–Luma–Koya map, contracts supplied at the departure landing, saved last-safe-landings and upstream/downstream navigation through fixed geography. It keeps the original Base Light/Full deliveries and adds Koya food for Luma, Luma filters for Koya, and an explicitly empty, unpaid Luma–Base repositioning trip. The empty return lets the player revisit Base and cross the fork downstream without introducing another cargo type.
+
+Successful committed deliveries or explicit terminal mooring move the checkpoint. Failure or abandonment recovers there; no mid-river resume or incidental-dock fast travel. Free departure services preserve the current per-run fuel/hull model. Current zones now flow consistently south; the old north-assisting rapids have been retuned and both directions measured in complete scripted runs. Version-3 profiles migrate valid older progress and commit checkpoint/reward/receipt together. These are implemented behaviors, while human handling and remaining acceptance still require actual evidence. Wider campaigns, persistent service simulation and new encounter systems remain later decisions.
+
+### Player feedback — milestone 5 accepted, next map direction
+
+The player tested milestone 5, reports that the game is playable and explicitly requests recording the step as a success. The map contains too much text, and a linear river network feels boring. These are accepted directions for a future milestone, not instructions to build them in the current control change:
+
+- Present the map primarily as an image or node-and-river graph, with recognizable landings, connecting waterways, boat location and flow arrows. Put detailed cargo/source/service text in the selected contract's detail panel; avoid making the map itself a text-heavy board.
+- Add authored tributaries and side streams so the network offers meaningful alternate destinations and route choices. Keep consistent upstream/downstream geography and clear return connections; decide scope, route balance, persistence and performance acceptance in a separate plan before implementation.
+
+The current three-landing geography and map remain unchanged. The immediate control request is implemented separately: tap **W** to start continuous cruise at the selected gear; tap **S** to stop the engine and decelerate. Releasing W keeps cruise active. Space has no gameplay action. A/D stay screen-relative; gears and reverse retain their existing meaning. Pause cancels cruise and requires a new W press after resume. An unpowered boat can still drift with the river current.

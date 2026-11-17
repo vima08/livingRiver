@@ -1,6 +1,7 @@
 extends SceneTree
 
 const Text = preload("res://scripts/localization.gd")
+const Contracts = preload("res://scripts/river_contracts.gd")
 var failures: Array[String] = []
 
 func check(condition: bool, message: String) -> void:
@@ -13,6 +14,14 @@ func _initialize() -> void:
 	check(Text.t("Unknown message %d", [7]) == "Unknown message 7", "Missing English template formats")
 	Text.set_locale("ru")
 	check(Text.catalog_errors.is_empty(), "All catalog placeholder signatures are valid: " + str(Text.catalog_errors))
+	var catalog: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://resources/translations/ru.json"))
+	for source: String in catalog:
+		check(not str(catalog[source]).contains("??") and not str(catalog[source]).contains(String.chr(0xfffd)), "Translation has lost Unicode text: " + source)
+	for source: String in ["NORTH ↑ / Water flows SOUTH ↓", "● %s / You are here", "↓ 575 m / Village reach", "↓ 725 m / Island fork", "BASE DEPOT", "%s → %s", "%s → %s / %s / %.2f km", "%s / Next: %s"]:
+		check(Text.has_translation(source), "Map/navigation message missing: " + source)
+	for id: String in Contracts.JOBS:
+		for key: String in ["title", "source"]:
+			check(Text.has_translation(Contracts.JOBS[id][key]), "Contract message missing: " + Contracts.JOBS[id][key])
 	check(Text.t("Play") == "Играть", "Russian menu translation")
 	check(Text.t("Unknown message %d", [7]) == "Unknown message 7", "Missing Russian entry falls back to English")
 	check(Text.t("NEXT: %s", ["Koya Landing"]) == "ДАЛЕЕ: Причал Коя", "Nested display names translate without changing IDs")
@@ -29,7 +38,7 @@ func _initialize() -> void:
 	# Layout metrics exercise the real font, while screenshots remain a separate review gate.
 	var manifest := Text.t("%s: %s / %s", ["Koya Landing", "Water filters", "returning"])
 	check(font.get_string_size(manifest, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x <= 400, "Russian manifest fits its header column")
-	var controls := Text.t("A D Steer   W Throttle   S / SPACE Brake   1-%d Gears   9 Reverse   Hold E Unload   R Briefing   ESC Pause   ` FPS", [3])
+	var controls := Text.t("A D Screen steer   W Start cruise   S Stop   1-%d Gears   9 Reverse   Hold E Dock   R Landing map   ESC Pause   ` FPS", [3])
 	check(font.get_string_size(controls, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x <= 1200, "Russian controls fit the footer")
 	var panel_lines := [
 		["Light run / 100 support", 21, 320],

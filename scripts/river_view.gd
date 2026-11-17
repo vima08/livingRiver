@@ -94,6 +94,7 @@ func _draw() -> void:
 	_draw_water()
 	_draw_banks()
 	_draw_island()
+	_draw_base()
 	for rock: Dictionary in game.rocks:
 		var point := _screen(rock.pos)
 		if point.y > -100 and point.y < 820:
@@ -402,6 +403,19 @@ func _draw_house(pos: Vector2, size: Vector2, solar: bool) -> void:
 			draw_line(panel.position + Vector2(i * 16, 0), panel.position + Vector2(i * 16, 35), Color("97b8be"), 1)
 		draw_line(panel.position + Vector2(0, 17), panel.position + Vector2(64, 17), Color("97b8be"), 1)
 
+func _draw_base() -> void:
+	var dock := _screen(game.base_pos)
+	if dock.y < -180 or dock.y > 900:
+		return
+	var shore: float = game.river_center(0) - game.river_half_width(0)
+	draw_style_box(_rounded_box(Color("b8ac77"), 24), Rect2(shore - 230, dock.y - 100, 218, 200))
+	draw_rect(Rect2(shore - 15, dock.y - 30, dock.x - shore + 35, 60), Color("a98555"))
+	draw_rect(Rect2(shore - 205, dock.y - 80, 180, 30), INK)
+	draw_string(ThemeDB.fallback_font, Vector2(shore - 195, dock.y - 59), Text.t("BASE DEPOT"), HORIZONTAL_ALIGNMENT_LEFT, -1, 17, CREAM)
+	_draw_house(Vector2(shore - 130, dock.y + 13), Vector2(92, 65), false)
+	for i in range(8):
+		draw_arc(dock, 95, i * TAU / 8.0, i * TAU / 8.0 + 0.45, 4, FOAM, 2.0, true)
+
 func _draw_boat() -> void:
 	var pos := _screen(game.boat_pos)
 	if game.impact_flash > 0.0:
@@ -410,7 +424,7 @@ func _draw_boat() -> void:
 		draw_circle(pos, 40.0, Color(1.0, 0.57, 0.29, flash * 0.27))
 		draw_arc(pos, ring_radius, 0, TAU, 40, Color(1.0, 0.66, 0.37, flash), 4.0, true)
 		draw_arc(pos, ring_radius + 8.0, 0, TAU, 40, Color(1.0, 0.91, 0.7, flash * 0.6), 1.5, true)
-	var angle: float = clampf(game.velocity.x / 750.0, -0.22, 0.22)
+	var angle: float = game.boat_angle()
 	var speed: float = game.velocity.length()
 	if speed > 1.0:
 		var strength := clampf(speed / 140.0, 0.0, 1.0)
@@ -432,7 +446,7 @@ func _draw_boat() -> void:
 	draw_colored_polygon(PackedVector2Array([Vector2(0, -30), Vector2(10, -19), Vector2(13, 5), Vector2(11, 28), Vector2(-11, 28), Vector2(-13, 5), Vector2(-10, -19)]), CREAM)
 	draw_colored_polygon(PackedVector2Array([Vector2(-9, -13), Vector2(9, -13), Vector2(11, 2), Vector2(-11, 2)]), Color("325d65"))
 	draw_line(Vector2(-8, -11), Vector2(7, -11), Color("b9d2c5"), 2, true)
-	if not game.completed_order("koya_filters"):
+	if not game.manifest.pending_for_stop("koya").is_empty():
 		draw_rect(Rect2(-10, 6, 20, 19), Color("6c845a"))
 		draw_rect(Rect2(-2, 9, 4, 13), CREAM)
 		draw_rect(Rect2(-6, 13, 12, 4), CREAM)

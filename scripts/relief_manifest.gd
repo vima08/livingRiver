@@ -1,8 +1,11 @@
 class_name ReliefManifest
 extends RefCounted
 
+const Contracts = preload("res://scripts/river_contracts.gd")
+
 var orders: Array[Dictionary] = []
 var preset := "light"
+var contract_id := "base_light"
 
 func _init(load_name: String = "light") -> void:
 	configure(load_name)
@@ -10,33 +13,41 @@ func _init(load_name: String = "light") -> void:
 func configure(load_name: String) -> bool:
 	if load_name not in ["light", "full"]:
 		return false
-	preset = load_name
+	return configure_contract("base_" + load_name)
+
+func configure_contract(id: String) -> bool:
+	var job: Dictionary = Contracts.job(id)
+	if job.is_empty():
+		return false
+	contract_id = id
+	preset = "full" if id == "base_full" else "empty" if job.orders.is_empty() else "light"
 	orders.clear()
-	if preset == "full":
-		orders.append({"id": "luma_food", "cargo": "Food", "recipient": "Luma Landing", "stop": "luma", "reward": 60, "completed": false})
-	orders.append({"id": "koya_filters", "cargo": "Water filters", "recipient": "Koya Landing", "stop": "koya", "reward": 100, "completed": false})
+	for order_id: String in job.orders:
+		var order: Dictionary = Contracts.ORDERS[order_id].duplicate(true)
+		order.completed = false
+		orders.append(order)
 	return true
 
 func valid_data() -> bool:
-	if preset not in ["light", "full"] or orders.size() != (2 if preset == "full" else 1):
+	var job: Dictionary = Contracts.job(contract_id)
+	if job.is_empty() or orders.size() != job.orders.size():
+		return false
+	if preset != ("full" if contract_id == "base_full" else "empty" if job.orders.is_empty() else "light"):
 		return false
 	var seen: Array[String] = []
-	for order in orders:
+	for i in range(orders.size()):
+		var order: Dictionary = orders[i]
 		for field in ["id", "cargo", "recipient", "stop", "reward", "completed"]:
 			if not order.has(field):
 				return false
-		if order.id in seen or not order.completed is bool:
+		if order.id in seen or order.id != job.orders[i] or not order.completed is bool:
 			return false
-		if order.id == "luma_food":
-			if preset != "full" or order.stop != "luma" or order.cargo != "Food" or order.reward != 60 or order.recipient != "Luma Landing":
+		var expected: Dictionary = Contracts.ORDERS[order.id]
+		for field: String in expected:
+			if typeof(order[field]) != typeof(expected[field]) or order[field] != expected[field]:
 				return false
-		elif order.id == "koya_filters":
-			if order.stop != "koya" or order.cargo != "Water filters" or order.reward != 100 or order.recipient != "Koya Landing":
-				return false
-		else:
-			return false
 		seen.append(order.id)
-	return "koya_filters" in seen
+	return true
 
 func pending_for_stop(stop: String) -> Dictionary:
 	for order in orders:
@@ -81,4 +92,8 @@ func earned_support() -> int:
 	return amount
 
 func full_load() -> bool:
-	return orders.size() == 2 and not completed_order("luma_food")
+	var aboard := 0
+	for order: Dictionary in orders:
+		if not order.completed:
+			aboard += 1
+	return aboard > 1

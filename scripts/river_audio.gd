@@ -85,6 +85,9 @@ func update_mix() -> void:
 func targets() -> Vector2:
 	if not is_instance_valid(game) or game.state != "running" or not game.ui_screen.is_empty() or game.fuel <= 0.0:
 		return Vector2(0.0, 0.85)
+	var cruise: Variant = game.get("cruise_active")
+	if cruise != null and not cruise and game.engine_throttle <= 0.0:
+		return Vector2(0.0, 0.85)
 	var throttle := clampf(game.engine_throttle, 0.0, 1.0)
 	var gear := 1.0 if game.selected_gear == 9 else float(game.selected_gear)
 	var heavy := 1.0 if game.manifest.full_load() else 0.0
