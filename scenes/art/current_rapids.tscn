@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/visual/current_rapids.svg" id="1"]
+
+[node name="CurrentRapids" type="Node2D"]
+
+[node name="Arrow" type="Sprite2D" parent="."]
+texture = ExtResource("1")

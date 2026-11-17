@@ -59,6 +59,7 @@ Maintain `doc/workbench.md` when implementation starts, recording the current ob
 
 ## Implementation and verification
 
+- World artwork now has editable sources in `scenes/art/`, an overview in `scenes/asset_gallery.tscn`, and a save-free `@tool` river preview in `scenes/river_world.tscn`. Gameplay uses those same asset scenes. Keep native scene edits authoritative; never run `tools/bake_visual_scenes.gd -- --replace` automatically. Shared foliage SVGs remain batched in the river renderer. See `doc/editingArt.md` for editing boundaries.
 - Use small scenes and scripts with clear ownership. Let the working prototype guide architecture; avoid speculative frameworks.
 - Use Input Map actions, physics-step movement, and delta-aware resource consumption. Define scrolling and boat motion together to avoid double movement.
 - Keep collision geometry consistent with visible banks and hazards. Show damage, fuel use, docking progress, and mission outcomes clearly.

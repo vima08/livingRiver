@@ -1,0 +1,13 @@
+# Editing Living River's visual assets
+
+Open `scenes/asset_gallery.tscn` in the 2D workspace for an overview. F6 runs only this gallery; F5 runs the game. The gallery includes cargo/damage boat variants and waiting/received landing variants. Open the source scene from the FileSystem dock to edit its native child nodes. Use F to frame selected artwork when opening a small asset.
+
+The reusable sources live in `scenes/art/`. Boat artwork uses Polygon2D and Line2D children, with separate Filters, Food and Damage groups. Inspector toggles preview those groups. Landings contain native waiting/received groups, labels, piers, buildings and people. Boat state and delivery/locale updates change existing nodes; they do not regenerate artwork. Editing a landing's buildings changes that landing; `house.tscn` is a standalone building example, rather than the source of every differently sized building already inside the landings.
+
+`scenes/river_world.tscn` assembles these scenes. Its `@tool` renderer shows the same water, banks, island and cached foliage in the editor. Select the root to choose Base, Fork, Refuel, Luma or Koya using Preview Region, and reverse the preview hull with Preview Southbound. Those properties affect previews only. Runtime positions and visibility follow the existing navigation simulation; moving a world instance in the editor does not move the physical landing or route. Shared geography lives in `scripts/river_layout.gd` so previews and collisions use identical coordinates.
+
+Dense trees remain batched texture draws rather than hundreds of individual scene nodes. The canopy and palm scenes expose representative editable sprites, using SVG sources in `assets/visual/`. The river uses the same canopy SVG variants and palm texture. Edit the shared SVG source to change dense foliage, rather than expecting a transform on a gallery sprite to change all trees. Water strokes and route contours remain procedural and are visible through the editor preview. HUD/menu and audio synthesis remain in their existing scripts; this conversion concerns world artwork.
+
+`scripts/editor/river_preview.gd` is a data-only model. Opening a preview does not create the game controller, input bindings, player profile, settings or audio services. Actual gameplay still starts through `main.tscn`.
+
+`tools/bake_visual_scenes.gd` records the original drawing geometry into native nodes. It was used explicitly for this migration and is not part of startup, importing or gameplay. Scenes are now authoritative. Running that tool with its required `-- --replace` flag deliberately overwrites the scene artwork: do not rerun it after manual art edits unless you intend to replace them. No external art or new license dependency was introduced.

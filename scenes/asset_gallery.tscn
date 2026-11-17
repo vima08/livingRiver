@@ -1,0 +1,169 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/editor/asset_gallery.gd" id="1_gallery"]
+[ext_resource type="PackedScene" path="res://scenes/art/boat.tscn" id="2_boat"]
+[ext_resource type="PackedScene" path="res://scenes/art/rock.tscn" id="3_rock"]
+[ext_resource type="PackedScene" path="res://scenes/art/fuel_buoy.tscn" id="4_fuel_buoy"]
+[ext_resource type="PackedScene" path="res://scenes/art/house.tscn" id="5_house"]
+[ext_resource type="PackedScene" path="res://scenes/art/base_landing.tscn" id="6_base_landing"]
+[ext_resource type="PackedScene" path="res://scenes/art/luma_landing.tscn" id="7_luma_landing"]
+[ext_resource type="PackedScene" path="res://scenes/art/koya_landing.tscn" id="8_koya_landing"]
+[ext_resource type="PackedScene" path="res://scenes/art/canopy.tscn" id="9_canopy"]
+[ext_resource type="PackedScene" path="res://scenes/art/palm.tscn" id="10_palm"]
+
+[node name="AssetGallery" type="Node2D"]
+script = ExtResource("1_gallery")
+
+[node name="Backdrop" type="Polygon2D" parent="."]
+color = Color(0.10, 0.24, 0.23, 1)
+polygon = PackedVector2Array(0, 0, 1280, 0, 1280, 1460, 0, 1460)
+
+[node name="Title" type="Label" parent="."]
+offset_left = 38.0
+offset_top = 24.0
+theme_override_font_sizes/font_size = 32
+theme_override_colors/font_color = Color(0.94, 0.92, 0.82, 1)
+text = "Living River | Native asset gallery"
+
+[node name="Subtitle" type="Label" parent="."]
+offset_left = 38.0
+offset_top = 70.0
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.94, 0.92, 0.82, 1)
+text = "Open an art scene to select and edit its polygons, lines and labels."
+
+[node name="BoatEmptyLabel" type="Label" parent="."]
+offset_left = 55.0
+offset_top = 126.0
+theme_override_font_sizes/font_size = 19
+theme_override_colors/font_color = Color(0.94, 0.92, 0.82, 1)
+text = "Boat / empty"
+
+[node name="BoatEmpty" parent="." instance=ExtResource("2_boat")]
+position = Vector2(130, 238)
+
+[node name="BoatLoadedLabel" type="Label" parent="."]
+offset_left = 260.0
+offset_top = 126.0
+theme_override_font_sizes/font_size = 19
+theme_override_colors/font_color = Color(0.94, 0.92, 0.82, 1)
+text = "Boat / full cargo"
+
+[node name="BoatLoaded" parent="." instance=ExtResource("2_boat")]
+position = Vector2(335, 238)
+
+[node name="BoatDamagedLabel" type="Label" parent="."]
+offset_left = 475.0
+offset_top = 126.0
+theme_override_font_sizes/font_size = 19
+theme_override_colors/font_color = Color(0.94, 0.92, 0.82, 1)
+text = "Boat / damaged"
+
+[node name="BoatDamaged" parent="." instance=ExtResource("2_boat")]
+position = Vector2(550, 238)
+
+[node name="RockLabel" type="Label" parent="."]
+offset_left = 720.0
+offset_top = 126.0
+theme_override_font_sizes/font_size = 19
+theme_override_colors/font_color = Color(0.94, 0.92, 0.82, 1)
+text = "Rock"
+
+[node name="Rock" parent="." instance=ExtResource("3_rock")]
+position = Vector2(755, 230)
+
+[node name="FuelLabel" type="Label" parent="."]
+offset_left = 890.0
+offset_top = 126.0
+theme_override_font_sizes/font_size = 19
+theme_override_colors/font_color = Color(0.94, 0.92, 0.82, 1)
+text = "Fuel buoy"
+
+[node name="FuelBuoy" parent="." instance=ExtResource("4_fuel_buoy")]
+position = Vector2(935, 230)
+
+[node name="HouseLabel" type="Label" parent="."]
+offset_left = 1080.0
+offset_top = 126.0
+theme_override_font_sizes/font_size = 19
+theme_override_colors/font_color = Color(0.94, 0.92, 0.82, 1)
+text = "House"
+
+[node name="House" parent="." instance=ExtResource("5_house")]
+position = Vector2(1130, 230)
+
+[node name="BaseLabel" type="Label" parent="."]
+offset_left = 50.0
+offset_top = 344.0
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.94, 0.92, 0.82, 1)
+text = "Base landing"
+
+[node name="BaseLanding" parent="." instance=ExtResource("6_base_landing")]
+position = Vector2(430, 480)
+
+[node name="CanopyLabel" type="Label" parent="."]
+offset_left = 600.0
+offset_top = 344.0
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.94, 0.92, 0.82, 1)
+text = "Canopy / shared SVG"
+
+[node name="Canopy" parent="." instance=ExtResource("9_canopy")]
+position = Vector2(740, 480)
+
+[node name="PalmLabel" type="Label" parent="."]
+offset_left = 940.0
+offset_top = 344.0
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.94, 0.92, 0.82, 1)
+text = "Palm / cached fronds"
+
+[node name="Palm" parent="." instance=ExtResource("10_palm")]
+position = Vector2(1050, 480)
+
+[node name="LumaLabel" type="Label" parent="."]
+offset_left = 50.0
+offset_top = 590.0
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.94, 0.92, 0.82, 1)
+text = "Luma / waiting for food"
+
+[node name="LumaWaiting" parent="." instance=ExtResource("7_luma_landing")]
+position = Vector2(600, 815)
+
+[node name="KoyaLabel" type="Label" parent="."]
+offset_left = 680.0
+offset_top = 590.0
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.94, 0.92, 0.82, 1)
+text = "Koya / waiting for filters"
+
+[node name="KoyaWaiting" parent="." instance=ExtResource("8_koya_landing")]
+position = Vector2(680, 815)
+
+[node name="LumaReceivedLabel" type="Label" parent="."]
+offset_left = 50.0
+offset_top = 1030.0
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.94, 0.92, 0.82, 1)
+text = "Luma / delivery received"
+
+[node name="LumaReceived" parent="." instance=ExtResource("7_luma_landing")]
+position = Vector2(600, 1260)
+
+[node name="KoyaReceivedLabel" type="Label" parent="."]
+offset_left = 680.0
+offset_top = 1030.0
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.94, 0.92, 0.82, 1)
+text = "Koya / delivery received"
+
+[node name="KoyaReceived" parent="." instance=ExtResource("8_koya_landing")]
+position = Vector2(680, 1260)
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(640, 730)
+zoom = Vector2(0.48, 0.48)
+enabled = true
+

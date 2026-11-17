@@ -5,3 +5,4 @@ exports/
 tmp/
 *.log
 evidence/
+.test-user/

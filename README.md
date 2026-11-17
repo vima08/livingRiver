@@ -1,6 +1,14 @@
 # Living River
 
-A Godot 4.7.2 river-delivery prototype linking Base, Luma and Koya. Choose a locally supplied job, navigate upstream or downstream, deliver aid and depart next time from your last safe landing. The Base relief run takes about three minutes; village legs are shorter. Art and sound are generated from original code; no external game assets are required.
+A Godot 4.7.2 river-delivery prototype linking Base, Luma and Koya. Choose a locally supplied job, navigate upstream or downstream, deliver aid and depart next time from your last safe landing. The Base relief run takes about three minutes; village legs are shorter. Art and sound are original; no external game assets are required.
+
+## Edit the artwork
+
+Open [scenes/asset_gallery.tscn](scenes/asset_gallery.tscn) in Godot's **2D** workspace to browse the artwork, or press **F6** to view the gallery. Individual editable scenes are in [scenes/art/](scenes/art/): boat, rock, fuel buoy, house, landings, canopy and palm. Their polygons, lines, labels and sprites are ordinary scene children. The boat's Inspector exposes cargo and damage previews. Open an individual scene to edit its parts; gameplay instances use these scene files.
+
+Open [scenes/river_world.tscn](scenes/river_world.tscn) for the assembled river preview. Select its root and change **Preview Region** or **Preview Southbound** in the Inspector to inspect Base, the fork, refuel buoy, Luma and Koya. The main scene also includes this world visibly in the editor. These previews do not load saves, change settings or play audio. **F5** still launches the game.
+
+Dense riverbank foliage and water remain batched for performance, with their artwork visible in the river preview. Shared foliage SVG sources are in `assets/visual/`. [doc/editingArt.md](doc/editingArt.md) describes scene ownership and the explicit one-time migration tool.
 
 ## Play
 

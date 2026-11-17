@@ -1,0 +1,15 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/visual/palm_fronds.svg" id="1"]
+
+[node name="Palm" type="Node2D"]
+
+[node name="Trunk" type="Line2D" parent="."]
+points = PackedVector2Array(13, 25, -12, -15)
+width = 6.0
+default_color = Color(0.5490196, 0.5333334, 0.3372549, 1)
+antialiased = true
+
+[node name="Fronds" type="Sprite2D" parent="."]
+position = Vector2(-12, -15)
+texture = ExtResource("1")

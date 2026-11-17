@@ -1,0 +1,78 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/art/boat_art.gd" id="1_1paan"]
+
+[node name="Boat" type="Node2D" unique_id=184494418]
+script = ExtResource("1_1paan")
+
+[node name="Polygon1" type="Polygon2D" parent="." unique_id=1131171032]
+color = Color(0.03, 0.18, 0.18, 0.45)
+polygon = PackedVector2Array(5, -29, 18, -16, 23, 11, 20, 40, -10, 40, -13, 11, -8, -16)
+
+[node name="Polygon2" type="Polygon2D" parent="." unique_id=1067061237]
+color = Color(0.93333334, 0.57254905, 0.31764707, 1)
+polygon = PackedVector2Array(0, -36, 13, -23, 18, 4, 15, 33, -15, 33, -18, 4, -13, -23)
+
+[node name="Line3" type="Line2D" parent="." unique_id=9220675]
+points = PackedVector2Array(0, -36, 13, -23, 18, 4, 15, 33, -15, 33, -18, 4, -13, -23, 0, -36)
+width = 2.0
+default_color = Color(0.078431375, 0.24313726, 0.23137255, 1)
+antialiased = true
+
+[node name="Polygon4" type="Polygon2D" parent="." unique_id=1959793920]
+color = Color(0.9411765, 0.91764706, 0.8156863, 1)
+polygon = PackedVector2Array(0, -30, 10, -19, 13, 5, 11, 28, -11, 28, -13, 5, -10, -19)
+
+[node name="Polygon5" type="Polygon2D" parent="." unique_id=1277476820]
+color = Color(0.19607843, 0.3647059, 0.39607844, 1)
+polygon = PackedVector2Array(-9, -13, 9, -13, 11, 2, -11, 2)
+
+[node name="Line6" type="Line2D" parent="." unique_id=21374172]
+points = PackedVector2Array(-8, -11, 7, -11)
+width = 2.0
+default_color = Color(0.7254902, 0.8235294, 0.77254903, 1)
+antialiased = true
+
+[node name="Filters" type="Node2D" parent="." unique_id=330959075]
+
+[node name="Polygon7" type="Polygon2D" parent="Filters" unique_id=1729242345]
+color = Color(0.42352942, 0.5176471, 0.3529412, 1)
+polygon = PackedVector2Array(-10, 6, 10, 6, 10, 25, -10, 25)
+
+[node name="Polygon8" type="Polygon2D" parent="Filters" unique_id=1917340371]
+color = Color(0.9411765, 0.91764706, 0.8156863, 1)
+polygon = PackedVector2Array(-2, 9, 2, 9, 2, 22, -2, 22)
+
+[node name="Polygon9" type="Polygon2D" parent="Filters" unique_id=988249163]
+color = Color(0.9411765, 0.91764706, 0.8156863, 1)
+polygon = PackedVector2Array(-6, 13, 6, 13, 6, 17, -6, 17)
+
+[node name="Food" type="Node2D" parent="." unique_id=1878570783]
+
+[node name="Polygon10" type="Polygon2D" parent="Food" unique_id=1445726364]
+color = Color(0.8156863, 0.627451, 0.38039216, 1)
+polygon = PackedVector2Array(-11, -5, 11, -5, 11, 6, -11, 6)
+
+[node name="Line11" type="Line2D" parent="Food" unique_id=201418572]
+points = PackedVector2Array(0, -4, 0, 5)
+width = 2.0
+default_color = Color(0.9411765, 0.91764706, 0.8156863, 1)
+
+[node name="Polygon12" type="Polygon2D" parent="." unique_id=1470217653]
+color = Color(0.15686275, 0.2627451, 0.2901961, 1)
+polygon = PackedVector2Array(-5, 30, 5, 30, 5, 40, -5, 40)
+
+[node name="Line13" type="Line2D" parent="." unique_id=622198394]
+points = PackedVector2Array(0, -29, 0, -39)
+width = 2.0
+default_color = Color(0.078431375, 0.24313726, 0.23137255, 1)
+antialiased = true
+
+[node name="Damage" type="Node2D" parent="." unique_id=302167348]
+visible = false
+
+[node name="Line14" type="Line2D" parent="Damage" unique_id=1990224299]
+points = PackedVector2Array(9, 0, 4, 8)
+width = 3.0
+default_color = Color(0.62352943, 0.29411766, 0.24313726, 1)
+antialiased = true

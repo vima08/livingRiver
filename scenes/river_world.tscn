@@ -1,0 +1,31 @@
+[gd_scene format=3 uid="uid://fvfwalteo20t"]
+
+[ext_resource type="Script" uid="uid://baj6w3hob7oct" path="res://scripts/river_view.gd" id="1_view"]
+[ext_resource type="PackedScene" path="res://scenes/art/boat.tscn" id="2_boat"]
+[ext_resource type="PackedScene" path="res://scenes/art/fuel_buoy.tscn" id="3_fuel"]
+[ext_resource type="PackedScene" path="res://scenes/art/base_landing.tscn" id="4_base"]
+[ext_resource type="PackedScene" path="res://scenes/art/luma_landing.tscn" id="5_luma"]
+[ext_resource type="PackedScene" path="res://scenes/art/koya_landing.tscn" id="6_koya"]
+
+[node name="RiverWorld" type="Node2D" unique_id=1447157986]
+script = ExtResource("1_view")
+
+[node name="Rocks" type="Node2D" parent="." unique_id=1791214872]
+
+[node name="FuelBuoy" parent="." unique_id=1620069420 instance=ExtResource("3_fuel")]
+visible = false
+position = Vector2(545.22723, -11880)
+
+[node name="BaseLanding" parent="." unique_id=1130072446 instance=ExtResource("4_base")]
+position = Vector2(460, 520)
+
+[node name="LumaLanding" parent="." unique_id=86992450 instance=ExtResource("5_luma")]
+visible = false
+position = Vector2(468.84085, -13980)
+
+[node name="KoyaLanding" parent="." unique_id=288810682 instance=ExtResource("6_koya")]
+visible = false
+position = Vector2(716.9059, -25480)
+
+[node name="Boat" parent="." unique_id=1409381682 instance=ExtResource("2_boat")]
+position = Vector2(640, 520)
